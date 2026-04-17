@@ -1,0 +1,68 @@
+﻿using FluentValidation.Results;
+using HealthCheck.Framework.Models;
+using HealthCheck.Framework.Repositories.MonitoredSystemRepository;
+using System.Net;
+
+namespace HealthCheck.Framework.Services.Database.MonitoredSystemService;
+
+public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRepository)
+{
+    public async Task<Result<MonitoredSystem>> CreateMonitoredSystem(MonitoredSystem monitoredSystem)
+    {
+        CreateMonitoredSystemValidator validator = new();
+
+        var validationResult = validator.Validate(monitoredSystem);
+
+        if (!validationResult.IsValid)
+        {
+            Failure failure = new(HttpStatusCode.BadRequest, validationResult);
+
+            return Result<MonitoredSystem>.AsFailure(failure);
+        }
+
+        monitoredSystem = await monitoredSystemRepository.Create(monitoredSystem);
+
+        return Result<MonitoredSystem>.AsSuccess(monitoredSystem);
+    }
+
+    public async Task<Result<MonitoredSystem>> GetMonitoredSystemById(Guid id)
+    {
+        var monitoredSystem = await monitoredSystemRepository.GetById(id);
+
+        if (monitoredSystem == null)
+            return Result<MonitoredSystem>.AsFailure(new Failure(HttpStatusCode.NotFound, BuildValidationResult("Sistema monitorado não encontrado")));
+
+        return Result<MonitoredSystem>.AsSuccess(monitoredSystem);
+    }
+
+    public async Task<Result<IList<MonitoredSystem>>> GetAllMonitoredSystems()
+    {
+        var monitoredSystems = await monitoredSystemRepository.GetAll();
+        return Result<IList<MonitoredSystem>>.AsSuccess(monitoredSystems);
+    }
+
+    public async Task UpdateMonitoredSystem(MonitoredSystem monitoredSystem)
+    {
+        await monitoredSystemRepository.Update(monitoredSystem);
+    }
+
+    public async Task<Result<object>> DeleteMonitoredSystem(Guid id)
+    {
+        var monitoredSystem = await monitoredSystemRepository.GetById(id);
+
+        // TODO: Futuramente, irei validar se quem está tentando deletar o sistema monitorado é o dono do mesmo,
+        // ou seja, se ele tem permissão para deletar o sistema monitorado
+        if (monitoredSystem == null)
+            return Result<object>.AsFailure(new(HttpStatusCode.BadRequest, BuildValidationResult("Recurso não encontrado")));
+
+        await monitoredSystemRepository.Delete(monitoredSystem);
+
+        return Result<object>.AsSuccess(new { });
+    }
+
+    private static ValidationResult BuildValidationResult(params string[] messages)
+    {
+        var errors = messages.Select(message => new ValidationFailure(string.Empty, message)).ToList();
+        return new ValidationResult(errors);
+    }
+}

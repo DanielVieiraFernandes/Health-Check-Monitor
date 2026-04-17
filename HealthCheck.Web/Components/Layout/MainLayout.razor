@@ -1,0 +1,146 @@
+﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject LoadingState loadingState
+
+<MudThemeProvider @bind-IsDarkMode="@isDarkMode" Theme="@meuTemaCustomizado" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Fixed="true">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
+        
+        <MudIcon Icon="@Icons.Material.Filled.MonitorHeart" Class="ml-3 mr-2" />
+        <MudText Typo="Typo.h6" Class="font-weight-bold">HealthCheck Monitor</MudText>
+        
+        <MudSpacer />
+        
+        <MudTooltip Text="Alternar Tema">
+            <MudIconButton Icon="@(isDarkMode? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                           Color="Color.Inherit"
+                           OnClick="@ToggleDarkMode" />
+        </MudTooltip>
+    </MudAppBar>
+
+    @* Menu Lateral (Drawer) com ClipMode para nascer ABAIXO do AppBar *@
+    <MudDrawer @bind-Open="drawerOpen"
+               Elevation="2"
+               Variant="@DrawerVariant.Mini"
+               OpenMiniOnHover="true"
+               ClipMode="DrawerClipMode.Always">
+        
+        <MudNavMenu Class="pt-4">
+            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard" IconColor="Color.Info">Dashboard</MudNavLink>
+            <MudNavLink Href="/sistemas" Icon="@Icons.Material.Filled.Dns" IconColor="Color.Success">Sistemas</MudNavLink>
+            <MudNavLink Href="/historico" Icon="@Icons.Material.Filled.History" IconColor="Color.Warning">Histórico</MudNavLink>
+            <MudNavLink Href="/configuracoes" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Secondary">Configurações</MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pt-6 pb-6">
+            @* Chama a sua classe customizada *@
+            <CustomErrorBoundary @ref="meuBoundary">
+            
+                @* O que renderizar quando tudo está bem *@
+                <ChildContent>
+                    @Body
+                </ChildContent>
+
+                @* O que renderizar quando o Gremlin ataca 😈 *@
+                <ErrorContent Context="excecao">
+                    <div class="alert alert-danger" style="margin: 20px; padding: 20px; border-radius: 8px;">
+                        <h2>😈 O Gremlin atacou nossa página!</h2>
+                        <p>Desculpe, algo deu errado. Nossa equipe de suporte aos gremlins já foi avisada (via log).</p>
+                    
+                        <button class="btn btn-warning" @onclick="TentarNovamente">
+                            Tentar Carregar Novamente
+                        </button>
+                    </div>
+                </ErrorContent>
+
+            </CustomErrorBoundary>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@if (loadingState.IsLoading)
+{
+    <div class="global-loading-overlay">
+        <LoadingSpinner Text="@loadingState.Message" SpinnerSize="Size.Large" />
+    </div>
+}
+
+<div id="blazor-error-ui" data-nosnippet>
+    Ocorreu um erro não tratado.
+    <a href="." class="reload text-warning">Recarregar</a>
+    <span class="dismiss">🗙</span>
+</div>
+
+@code {
+    private bool drawerOpen = true;
+    private bool isDarkMode = true;
+    // Referência ao seu componente customizado
+    private CustomErrorBoundary? meuBoundary;
+
+    private void TentarNovamente()
+    {
+        // O método Recover() limpa o erro e tenta renderizar o ChildContent novamente
+        meuBoundary?.Recover();
+    }
+
+    private MudTheme meuTemaCustomizado = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = Colors.Indigo.Default,
+            AppbarBackground = Colors.Indigo.Darken2,
+            Background = "#F8FAFC",               // Um cinza/azulado ainda mais limpo e moderno
+            DrawerBackground = Colors.Shades.White
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = Colors.Indigo.Lighten1,
+            AppbarBackground = "#0B0F19",         // Azul marinho extremamente escuro no topo
+            Background = "#111827",               // Fundo estilo "Tailwind Gray 900" (SaaS Moderno)
+            DrawerBackground = "#1F2937",         // Menu um tom levemente mais claro para dar profundidade
+        },
+        LayoutProperties = new LayoutProperties()
+        {
+            DefaultBorderRadius = "8px"      
+        },
+        Typography = new Typography()
+        {
+            Default = new DefaultTypography() 
+            {
+                FontFamily = new[] { "Inter", "Segoe UI", "Arial", "sans-serif" }
+            }
+        }
+    };
+
+    protected override void OnInitialized()
+    {
+        loadingState.OnChange += HandleLoadingStateChanged;
+    }
+
+    public void Dispose()
+    {
+        loadingState.OnChange -= HandleLoadingStateChanged;
+    }
+
+    private void HandleLoadingStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void DrawerToggle()
+    {
+        drawerOpen = !drawerOpen;
+    }
+
+    private void ToggleDarkMode()
+    {
+        isDarkMode = !isDarkMode;
+    }
+}

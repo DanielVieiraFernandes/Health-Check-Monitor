@@ -1,0 +1,21 @@
+.loading-spinner-container {
+    min-height: 280px;
+    gap: .9rem;
+}
+
+.loading-spinner-circle {
+    filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.25));
+}
+
+.loading-spinner-text {
+    color: rgba(226, 232, 240, 0.95);
+    font-weight: 500;
+}
+
+:global(.mud-theme-dark) .loading-spinner-circle {
+    filter: drop-shadow(0 6px 18px rgba(34, 211, 238, 0.28));
+}
+
+:global(.mud-theme-dark) .loading-spinner-text {
+    color: rgba(248, 250, 252, 0.96);
+}

@@ -1,0 +1,85 @@
+.system-card {
+    border-radius: 16px;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.97), rgba(238, 242, 255, 0.9));
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+    min-height: 220px;
+    cursor: pointer;
+}
+
+.system-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+    border-color: rgba(99, 102, 241, 0.4);
+}
+
+.system-card:focus-visible {
+    outline: 2px solid rgba(99, 102, 241, 0.7);
+    outline-offset: 2px;
+}
+
+.url-line {
+    overflow: hidden;
+}
+
+.url-line ::deep a {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+.search-panel {
+    border-radius: 16px;
+    border: 1px solid rgba(99, 102, 241, 0.22);
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(224, 231, 255, 0.84));
+}
+
+.search-row {
+    flex-wrap: wrap;
+}
+
+.search-input {
+    width: min(500px, 100%);
+}
+
+.future-filters {
+    border-radius: 12px;
+    border: 1px dashed rgba(99, 102, 241, 0.38);
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.filter-chip-row {
+    flex-wrap: wrap;
+}
+
+.empty-state {
+    border-radius: 16px;
+    border: 1px dashed rgba(99, 102, 241, 0.38);
+    background: linear-gradient(145deg, rgba(238, 242, 255, 0.92), rgba(224, 231, 255, 0.78));
+}
+
+:global(.mud-theme-dark) .system-card {
+    background: linear-gradient(145deg, rgba(30, 27, 75, 0.88), rgba(49, 46, 129, 0.62));
+    border-color: rgba(165, 180, 252, 0.44);
+}
+
+:global(.mud-theme-dark) .system-card:hover {
+    box-shadow: 0 14px 34px rgba(67, 56, 202, 0.32);
+    border-color: rgba(165, 180, 252, 0.72);
+}
+
+:global(.mud-theme-dark) .search-panel {
+    border-color: rgba(129, 140, 248, 0.42);
+    background: linear-gradient(145deg, rgba(30, 27, 75, 0.56), rgba(49, 46, 129, 0.46));
+}
+
+:global(.mud-theme-dark) .future-filters {
+    border-color: rgba(99, 102, 241, 0.42);
+    background: rgba(79, 70, 229, 0.18);
+}
+
+:global(.mud-theme-dark) .empty-state {
+    border-color: rgba(99, 102, 241, 0.42);
+    background: linear-gradient(145deg, rgba(30, 27, 75, 0.44), rgba(15, 23, 42, 0.66));
+}

@@ -1,0 +1,244 @@
+@inject LoadingState loadingState
+@inject IDialogService DialogService
+
+<SfDialog Width="980px"
+          IsModal="true"
+          ShowCloseIcon="true"
+          @bind-Visible="Visible"
+          CloseOnEscape="true"
+          CssClass="monitored-system-sync-dialog"
+          AllowDragging="false">
+    <DialogTemplates>
+        <Header>
+            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@(IsCreateMode ? Icons.Material.Filled.AddCircleOutline : Icons.Material.Filled.Edit)" Color="Color.Primary" />
+                <MudText Typo="Typo.h6">@(IsCreateMode ? "Registrar sistema monitorado" : "Editar sistema monitorado")</MudText>
+            </MudStack>
+        </Header>
+
+        <Content>
+            <MudGrid>
+                <MudItem xs="12" lg="8">
+                    <MudPaper Class="register-card pa-5" Elevation="0">
+                        <MudStack Spacing="3">
+                            <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Dados do sistema</MudText>
+
+                            <MudTextField @bind-Value="monitoredSystem.Name"
+                                          Label="Nome do sistema"
+                                          Variant="Variant.Outlined"
+                                          Placeholder="Ex.: API de Faturamento"
+                                          MaxLength="255"
+                                          Counter="255"
+                                          Immediate="true"
+                                          Error="@HasError(nameof(MonitoredSystem.Name))"
+                                          ErrorText="@GetError(nameof(MonitoredSystem.Name))" />
+
+                            <MudTextField @bind-Value="monitoredSystem.Url"
+                                          Label="URL"
+                                          Variant="Variant.Outlined"
+                                          Placeholder="https://minha-api.com/health"
+                                          MaxLength="2048"
+                                          Counter="2048"
+                                          Immediate="true"
+                                          Error="@HasError(nameof(MonitoredSystem.Url))"
+                                          ErrorText="@GetError(nameof(MonitoredSystem.Url))" />
+
+                            <MudNumericField T="int"
+                                             @bind-Value="monitoredSystem.IntervalInMinutes"
+                                             Label="Intervalo de verificação (minutos)"
+                                             Variant="Variant.Outlined"
+                                             Min="480"
+                                             Max="1440"
+                                             HideSpinButtons="false"
+                                             Immediate="true"
+                                             Error="@HasError(nameof(MonitoredSystem.IntervalInMinutes))"
+                                             ErrorText="@GetError(nameof(MonitoredSystem.IntervalInMinutes))" />
+
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hint-text">
+                                Intervalo permitido pela regra atual: de 480 minutos (8 horas) até 1440 minutos (24 horas).
+                            </MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" lg="4">
+                    <MudPaper Class="preview-card pa-4" Elevation="0">
+                        <MudStack Spacing="2">
+                            <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Pré-visualização</MudText>
+                            <MudDivider />
+
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Nome</MudText>
+                            <MudText Typo="Typo.body1">@GetPreviewName()</MudText>
+
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">URL</MudText>
+                            <MudText Typo="Typo.body2" Class="preview-url">@GetPreviewUrl()</MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </Content>
+    </DialogTemplates>
+
+    <DialogButtons>
+        <DialogButton Content="Cancelar" IsPrimary="false" CssClass="e-flat" OnClick="OnCancelClick"></DialogButton>
+        <DialogButton Content="@SaveButtonText" IsPrimary="true" CssClass="e-primary" OnClick="OnSaveClick"></DialogButton>
+    </DialogButtons>
+
+    <DialogEvents OnClose="OnDialogClose"/>
+</SfDialog>
+
+@code {
+    [Parameter]
+    public bool IsCreateMode { get; set; }
+
+    [Parameter] 
+    public bool Visible { get; set; }
+
+    [Parameter] 
+    public Guid? MonitoredSystemId { get; set; }
+
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private readonly Dictionary<string, string> fieldErrors = [];
+    private readonly CreateMonitoredSystemValidator validator = new();
+
+    private MonitoredSystem monitoredSystem { get; set; } = new();
+    private MonitoredSystem originalMonitoredSystem { get; set; }
+
+    private string SaveButtonText => IsCreateMode ? "Registrar sistema" : "Salvar alterações";
+
+    protected override async Task OnInitializedAsync()
+    {
+        //************************************************************
+        // CASO ESTEJA EM INCLUSÃO
+        //************************************************************
+        if (IsCreateMode)
+        {
+            fieldErrors.Clear();
+            return;
+        }
+
+        //************************************************************
+        // CASO ESTEJA EM EDIÇÃO
+        //************************************************************
+        await LoadMonitoredSystemData(MonitoredSystemId!.Value);
+    }
+    private async Task OnCancelClick(object _)
+    {
+        await CloseDialog();
+    }
+
+    private async Task OnSaveClick(object _)
+    {
+        await SaveData();
+    }
+
+    private async Task OnDialogClose()
+    {
+        Visible = false;
+    }
+
+    private async Task SaveData()
+    {
+        fieldErrors.Clear();
+
+        try
+        {
+            loadingState.Show(IsCreateMode ? "Registrando sistema monitorado..." : "Salvando alterações do sistema monitorado...");
+
+            if (IsCreateMode)
+            {
+                var result = await monitoredSystemService.CreateMonitoredSystem(monitoredSystem);
+
+                if (result.IsFailure)
+                {
+                    await ShowFailureDialog("Falha ao registrar sistema", result.Failure);
+                    return;
+                }
+
+                snackbar.Add("Sistema monitorado registrado com sucesso.", Severity.Success);
+            }
+            else
+            {
+                await monitoredSystemService.UpdateMonitoredSystem(monitoredSystem);
+                snackbar.Add("Sistema monitorado atualizado com sucesso.", Severity.Success);
+            }
+
+            await OnSaved.InvokeAsync();
+            await CloseDialog();
+        }
+        catch (Exception)
+        {
+            snackbar.Add("Não foi possível salvar os dados do sistema monitorado.", Severity.Error);
+        }
+        finally
+        {
+            loadingState.Hide();
+        }
+    }
+
+    private async Task LoadMonitoredSystemData(Guid monitoredSystemId)
+    {
+        try
+        {
+            loadingState.Show("Carregando dados do sistema...");
+
+            var result = await monitoredSystemService.GetMonitoredSystemById(monitoredSystemId);
+
+            if (result.IsFailure)
+            {
+                await ShowFailureDialog("Falha ao buscar dados do sistema monitorado", result.Failure);
+                await CloseDialog();
+                return;
+            }
+
+            monitoredSystem = result.Success!;
+            originalMonitoredSystem = result.Success!.Clone();
+        }
+        catch (Exception)
+        {
+            snackbar.Add("Não foi possível carregar os dados do sistema monitorado.", Severity.Error);
+            await CloseDialog();
+        }
+        finally
+        {
+            loadingState.Hide();
+        }
+    }
+
+    private async Task ShowFailureDialog(string title, Failure? failure)
+    {
+        var parameters = new DialogParameters
+        {
+            [nameof(ErrorReportDialog.Title)] = title,
+            [nameof(ErrorReportDialog.StatusCode)] = failure?.StatusCode,
+            [nameof(ErrorReportDialog.Errors)] = failure?.Errors.Select(error => error.ErrorMessage).ToList() ?? []
+        };
+
+        var options = new MudBlazor.DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+
+        await DialogService.ShowAsync<ErrorReportDialog>("Falha na operação", parameters, options);
+    }
+
+    private async Task CloseDialog()
+    {
+        Visible = false;
+    }
+
+    private bool HasError(string fieldName) => fieldErrors.ContainsKey(fieldName);
+
+    private string? GetError(string fieldName)
+        => fieldErrors.TryGetValue(fieldName, out var error) ? error : null;
+
+    private string GetPreviewName()
+        => string.IsNullOrWhiteSpace(monitoredSystem.Name) ? "Nome do sistema" : monitoredSystem.Name;
+
+    private string GetPreviewUrl()
+        => string.IsNullOrWhiteSpace(monitoredSystem.Url) ? "https://seu-endpoint.com/health" : monitoredSystem.Url;
+
+}

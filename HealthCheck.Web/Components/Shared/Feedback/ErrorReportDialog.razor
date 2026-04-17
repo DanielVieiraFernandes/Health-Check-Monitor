@@ -1,0 +1,45 @@
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="2">
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true">
+                @Title
+            </MudAlert>
+
+            @if (StatusCode is not null)
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    Código de status: @((int)StatusCode) (@StatusCode)
+                </MudText>
+            }
+
+            <MudText Typo="Typo.subtitle2" Class="mt-2">Detalhes</MudText>
+            <MudList T="string" Dense="true">
+                @if (Errors.Count == 0)
+                {
+                    <MudListItem T="string">Nenhum detalhe adicional foi informado.</MudListItem>
+                }
+                else
+                {
+                    @foreach (var error in Errors)
+                    {
+                        <MudListItem T="string">@error</MudListItem>
+                    }
+                }
+            </MudList>
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Close">Fechar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string Title { get; set; } = "Falha ao processar operação";
+    [Parameter] public System.Net.HttpStatusCode? StatusCode { get; set; }
+    [Parameter] public List<string> Errors { get; set; } = [];
+
+    private void Close() => MudDialog.Close();
+}
