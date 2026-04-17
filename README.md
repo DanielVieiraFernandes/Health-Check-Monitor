@@ -1,51 +1,51 @@
-# ?? HealthCheck Monitor
+# ğŸš€ HealthCheck Monitor
 
 <p align="center">
-  <b>Monitoramento inteligente de endpoints com foco em confiabilidade, clareza e evolução contínua.</b><br/>
-  <i>Projeto Web em Blazor Server, construído em .NET 10</i>
+  <b>Monitoramento inteligente de endpoints com foco em confiabilidade, clareza e evoluÃ§Ã£o contÃ­nua.</b><br/>
+  <i>Projeto Web em Blazor Server, construÃ­do em .NET 10</i>
 </p>
 
 ---
 
-## ? Visão Geral
+## âœ¨ VisÃ£o Geral
 
-O `HealthCheck Monitor` é um sistema web criado para registrar sistemas (atualmente endpoints HTTP) e acompanhar sua disponibilidade com base em intervalos configuráveis.
+O `HealthCheck Monitor` Ã© um sistema web criado para registrar sistemas (atualmente endpoints HTTP) e acompanhar sua disponibilidade com base em intervalos configurÃ¡veis.
 
-?? **Objetivo principal:** oferecer uma base sólida para observabilidade operacional, destacando rapidamente quando um serviço está saudável, indisponível ou com status desconhecido.
-
----
-
-## ?? Proposta do Produto
-
-Com o sistema, é possível:
-
-- ?? Registrar sistemas a serem monitorados
-- ?? Definir o intervalo de verificação
-- ?? Acompanhar status de saúde dos sistemas cadastrados
-- ?? Preparar terreno para notificações automáticas em falhas
-
-> ?? **Próxima evolução planejada:** camada de notificação (e-mail/outros canais) quando houver indisponibilidade ou incerteza de status.
+ğŸ¯ **Objetivo principal:** oferecer uma base sÃ³lida para observabilidade operacional, destacando rapidamente quando um serviÃ§o estÃ¡ saudÃ¡vel, indisponÃ­vel ou com status desconhecido.
 
 ---
 
-## ??? Arquitetura da Solução
+## ğŸ§  Proposta do Produto
 
-O projeto está organizado em três camadas/projetos principais:
+Com o sistema, Ã© possÃ­vel:
 
-- ?? `HealthCheck.Web`  
-  Interface web em `Blazor Server`, responsável pela experiência do usuário e fluxo de uso.
+- ğŸ“ Registrar sistemas a serem monitorados
+- â±ï¸ Definir o intervalo de verificaÃ§Ã£o
+- ğŸ“Š Acompanhar status de saÃºde dos sistemas cadastrados
+- âš ï¸ Preparar terreno para notificaÃ§Ãµes automÃ¡ticas em falhas
 
-- ?? `HealthCheck.Domain` (`HealthCheck.Framework.csproj`)  
-  Núcleo de regras de negócio, serviços e contratos de acesso a dados.
-
-- ??? `HealthCheck.DbUp`  
-  Projeto utilitário para preparação inicial do banco de dados.
-
-Essa divisão favorece **manutenção**, **evolução incremental** e **separação de responsabilidades**.
+> ğŸ”” **PrÃ³xima evoluÃ§Ã£o planejada:** camada de notificaÃ§Ã£o (e-mail/outros canais) quando houver indisponibilidade ou incerteza de status.
 
 ---
 
-## ?? Stack Técnica
+## ğŸ—ï¸ Arquitetura da SoluÃ§Ã£o
+
+O projeto estÃ¡ organizado em trÃªs camadas/projetos principais:
+
+- ğŸŒ `HealthCheck.Web`  
+  Interface web em `Blazor Server`, responsÃ¡vel pela experiÃªncia do usuÃ¡rio e fluxo de uso.
+
+- ğŸ§© `HealthCheck.Domain` (`HealthCheck.Framework.csproj`)  
+  NÃºcleo de regras de negÃ³cio, serviÃ§os e contratos de acesso a dados.
+
+- ğŸ› ï¸ `HealthCheck.DbUp`  
+  Projeto utilitÃ¡rio para preparaÃ§Ã£o inicial do banco de dados.
+
+Essa divisÃ£o favorece **manutenÃ§Ã£o**, **evoluÃ§Ã£o incremental** e **separaÃ§Ã£o de responsabilidades**.
+
+---
+
+## âš™ï¸ Stack TÃ©cnica
 
 - `.NET 10`
 - `Blazor Server`
@@ -57,46 +57,46 @@ Essa divisão favorece **manutenção**, **evolução incremental** e **separação de 
 
 ---
 
-## ?? Status Atual do Projeto
+## ğŸ§­ Status Atual do Projeto
 
-### ? Já implementado
-- Estrutura da aplicação web
+### âœ… JÃ¡ implementado
+- Estrutura da aplicaÃ§Ã£o web
 - Cadastro e gerenciamento de sistemas monitorados
-- Persistência de dados
-- Base de validações
-- Camada de feedback visual para o usuário
+- PersistÃªncia de dados
+- Base de validaÃ§Ãµes
+- Camada de feedback visual para o usuÃ¡rio
 
-### ?? Em evolução
-- Execução automática recorrente das verificações
-- Notificações de incidentes
-- Recursos avançados de histórico e filtros
+### ğŸ”„ Em evoluÃ§Ã£o
+- ExecuÃ§Ã£o automÃ¡tica recorrente das verificaÃ§Ãµes
+- NotificaÃ§Ãµes de incidentes
+- Recursos avanÃ§ados de histÃ³rico e filtros
 
 ---
 
-## ?? Destaques para Recrutadores
+## ğŸ’¼ Destaques para Recrutadores
 
 Este projeto evidencia:
 
-- ??? Organização arquitetural por responsabilidades
-- ?? Fundação pronta para crescimento com boas práticas
-- ?? Preocupação com UX/UI em aplicação corporativa
-- ?? Direcionamento claro para funcionalidades de observabilidade
+- ğŸ›ï¸ OrganizaÃ§Ã£o arquitetural por responsabilidades
+- ğŸ§ª FundaÃ§Ã£o pronta para crescimento com boas prÃ¡ticas
+- ğŸ¨ PreocupaÃ§Ã£o com UX/UI em aplicaÃ§Ã£o corporativa
+- ğŸ“ˆ Direcionamento claro para funcionalidades de observabilidade
 
 ---
 
-## ?? Aviso Importante de Uso
+## ğŸ” Aviso Importante de Uso
 
-?? **Este projeto NÃO possui licença de uso aberta.**  
-Todos os direitos estão reservados ao autor.
+ğŸš« **Este projeto NÃƒO possui licenÃ§a de uso aberta.**  
+Todos os direitos estÃ£o reservados ao autor.
 
-**Não é permitido usar, copiar, modificar, distribuir ou reutilizar este código sem autorização explícita.**
+**NÃ£o Ã© permitido usar, copiar, modificar, distribuir ou reutilizar este cÃ³digo sem autorizaÃ§Ã£o explÃ­cita.**
 
 ---
 
-## ????? Autor
+## ğŸ‘¨â€ğŸ’» Autor
 
 Projeto desenvolvido por **Daniel Vieira Fernandes**.
 
 <p align="center">
-  Feito com dedicação, visão de produto e foco em excelência técnica. ?
+  Feito com dedicaÃ§Ã£o, visÃ£o de produto e foco em excelÃªncia tÃ©cnica. âœ¨
 </p>
