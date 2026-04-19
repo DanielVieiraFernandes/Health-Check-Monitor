@@ -1,6 +1,7 @@
 ﻿using FluentValidation.Results;
 using HealthCheck.Framework.Models;
 using HealthCheck.Framework.Repositories.MonitoredSystemRepository;
+using HealthCheck.Framework.Services.Database.MonitoredSystemService.Validators;
 using System.Net;
 
 namespace HealthCheck.Framework.Services.Database.MonitoredSystemService;
@@ -43,6 +44,17 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
 
     public async Task<Result<object>> UpdateMonitoredSystem(MonitoredSystem monitoredSystem)
     {
+
+        UpdateMonitoredSystemValidator validator = new();
+
+        var validationResult = validator.Validate(monitoredSystem);
+
+        if (!validationResult.IsValid)
+        {
+            Failure failure = new(HttpStatusCode.BadRequest, validationResult);
+            return Result<object>.AsFailure(failure);
+        }
+
         await monitoredSystemRepository.Update(monitoredSystem);
 
         return Result<object>.AsSuccess(new { });

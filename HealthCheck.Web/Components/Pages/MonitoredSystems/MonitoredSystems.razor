@@ -44,7 +44,7 @@
 
             <MudDivider />
 
-            <MudStack Spacing="1">
+            @* <MudStack Spacing="1">
                 <MudText Typo="Typo.subtitle2" Class="font-weight-medium">Filtros adicionais (em breve)</MudText>
                 <MudPaper Class="future-filters pa-3" Elevation="0">
                     <MudStack Row="true" Spacing="1" Class="filter-chip-row">
@@ -53,7 +53,7 @@
                         <MudChip T="string" Variant="Variant.Outlined" Color="Color.Info" Label="true" Disabled="true">Última checagem</MudChip>
                     </MudStack>
                 </MudPaper>
-            </MudStack>
+            </MudStack> *@
         </MudStack>
     </MudPaper>
 
@@ -199,7 +199,9 @@
 
     private async Task HandleDialogSaved()
     {
+        loadingState.Show("Carregando sistemas monitorados...");
         await LoadMonitoredSystemsData();
+        loadingState.Hide();    
     }
 
     private static Color GetStatusColor(HealthStatus status)
