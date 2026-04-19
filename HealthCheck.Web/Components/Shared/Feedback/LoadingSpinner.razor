@@ -1,11 +1,13 @@
-<MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="loading-spinner-container">
-    <MudProgressCircular Indeterminate="true" Color="@Color" Size="@SpinnerSize" Class="loading-spinner-circle" />
+<MudPaper Class="loading-spinner-shell pa-8" Elevation="0">
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.Center" Class="loading-spinner-container">
+        <MudProgressCircular Indeterminate="true" Color="@Color" Size="@SpinnerSize" Class="loading-spinner-circle" />
 
-    @if (!string.IsNullOrWhiteSpace(Text))
-    {
-        <MudText Typo="Typo.body1" Color="Color.Inherit" Class="loading-spinner-text">@Text</MudText>
-    }
-</MudStack>
+        @if (!string.IsNullOrWhiteSpace(Text))
+        {
+            <MudText Typo="Typo.body1" Color="Color.Inherit" Class="loading-spinner-text">@Text</MudText>
+        }
+    </MudStack>
+</MudPaper>
 
 @code {
     [Parameter] public string Text { get; set; } = "Carregando...";

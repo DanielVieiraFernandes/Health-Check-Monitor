@@ -1,53 +1,226 @@
-.monitored-system-sync-dialog .e-dlg-content {
+:global(.monitored-system-sync-dialog .e-dlg-content) {
     padding: 0 !important;
 }
 
-.monitored-system-sync-dialog .e-footer-content {
-    border-top: 1px solid rgba(99, 102, 241, 0.22);
+:global(.monitored-system-sync-dialog .e-dialog) {
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 22px 42px rgba(30, 41, 59, 0.24);
+    border: 1px solid var(--mud-palette-divider) !important;
+    background: var(--mud-palette-surface) !important;
+    color: var(--mud-palette-text-primary) !important;
+    transform-origin: 50% 14%;
+}
+
+:global(.monitored-system-sync-dialog.e-dialog.e-popup-open) {
+    animation: monitored-system-dialog-enter .28s cubic-bezier(.22, .9, .24, 1.02);
+}
+
+:global(.monitored-system-sync-dialog.e-dialog.e-popup-close) {
+    animation: monitored-system-dialog-exit .18s ease-in forwards;
+}
+
+:global(.monitored-system-sync-dialog + .e-dlg-overlay) {
+    animation: monitored-system-dialog-overlay-enter .24s ease;
+}
+
+@keyframes monitored-system-dialog-enter {
+    0% {
+        opacity: 0;
+        transform: translateY(18px) scale(0.96);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes monitored-system-dialog-exit {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+    }
+}
+
+@keyframes monitored-system-dialog-overlay-enter {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+:global(.monitored-system-sync-dialog .e-dlg-header-content) {
+    border-bottom: 1px solid var(--mud-palette-divider) !important;
+    background: var(--mud-palette-surface) !important;
+    color: var(--mud-palette-text-primary) !important;
+}
+
+:global(.monitored-system-sync-dialog .e-footer-content) {
+    border-top: 1px solid var(--mud-palette-divider) !important;
     padding: 14px 18px;
+    background: var(--mud-palette-background-grey) !important;
 }
 
-.monitored-system-sync-dialog .register-card {
+:global(.monitored-system-sync-dialog .register-card) {
     border-radius: 14px;
-    border: 1px solid rgba(99, 102, 241, 0.2);
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.98), rgba(238, 242, 255, 0.9));
+    border: 1px solid var(--mud-palette-divider) !important;
+    background: var(--mud-palette-surface) !important;
 }
 
-.monitored-system-sync-dialog .preview-card {
+:global(.monitored-system-sync-dialog .preview-card) {
     border-radius: 14px;
-    border: 1px solid rgba(99, 102, 241, 0.18);
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.95), rgba(224, 231, 255, 0.84));
+    border: 1px solid var(--mud-palette-divider) !important;
+    background: var(--mud-palette-background-grey) !important;
+    min-height: 100%;
 }
 
-.monitored-system-sync-dialog .hint-text {
+:global(.monitored-system-sync-dialog .hint-text) {
     margin-top: -6px;
-    color: rgba(67, 56, 202, 0.92);
+    color: var(--mud-palette-text-secondary) !important;
 }
 
-.monitored-system-sync-dialog .preview-url {
+:global(.monitored-system-sync-dialog .preview-url) {
     overflow-wrap: anywhere;
 }
 
-:global(.mud-theme-dark) .monitored-system-sync-dialog .e-dlg-header-content,
-:global(.mud-theme-dark) .monitored-system-sync-dialog .e-footer-content {
-    background: rgba(15, 23, 42, 0.94);
+:global(.monitored-system-sync-dialog .e-btn.e-primary) {
+    border-radius: 10px;
+    background: linear-gradient(145deg, #4f46e5, #4338ca);
+    border-color: transparent;
+}
+
+:global(.monitored-system-sync-dialog .e-btn.e-flat) {
+    border-radius: 10px;
+}
+
+:global(.monitored-system-sync-dialog-dark .e-dialog) {
+    box-shadow: 0 24px 48px rgba(2, 6, 23, 0.48);
+    border-color: rgba(129, 140, 248, 0.28) !important;
+    background: #111827 !important;
+    color: #e2e8f0 !important;
+}
+
+:global(.monitored-system-sync-dialog-dark .e-dlg-header-content),
+:global(.monitored-system-sync-dialog-dark .e-footer-content) {
+    background: #0f172a !important;
+    color: #e2e8f0 !important;
+    border-color: rgba(129, 140, 248, 0.28) !important;
+}
+
+:global(.monitored-system-sync-dialog-dark .e-dlg-content) {
+    background: #111827 !important;
+    color: #e2e8f0 !important;
+}
+
+:global(.monitored-system-sync-dialog-dark .register-card) {
+    border-color: rgba(129, 140, 248, 0.34) !important;
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 27, 75, 0.72)) !important;
+}
+
+:global(.monitored-system-sync-dialog-dark .preview-card) {
+    border-color: rgba(129, 140, 248, 0.28) !important;
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.95), rgba(49, 46, 129, 0.42)) !important;
+}
+
+:global(.monitored-system-sync-dialog-dark .hint-text),
+:global(.monitored-system-sync-dialog-dark .mud-typography),
+:global(.monitored-system-sync-dialog-dark .mud-input-label),
+:global(.monitored-system-sync-dialog-dark .mud-input-helper-text),
+:global(.monitored-system-sync-dialog-dark .mud-input-slot),
+:global(.monitored-system-sync-dialog-dark .mud-input) {
+    color: rgba(226, 232, 240, 0.96) !important;
+}
+
+:global(.monitored-system-sync-dialog-dark .mud-input-outlined-border) {
+    border-color: rgba(129, 140, 248, 0.45) !important;
+}
+
+:global(.monitored-system-sync-dialog-dark .e-dlg-closeicon-btn .e-btn-icon) {
+    color: rgba(226, 232, 240, 0.94) !important;
+}
+
+:global(.theme-dark .monitored-system-sync-dialog .e-dialog),
+:global(.mud-theme-dark .monitored-system-sync-dialog .e-dialog),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark) {
+    box-shadow: 0 24px 48px rgba(2, 6, 23, 0.48);
+    border-color: var(--mud-palette-divider) !important;
+}
+
+:global(.theme-dark .monitored-system-sync-dialog .e-dlg-header-content),
+:global(.theme-dark .monitored-system-sync-dialog .e-footer-content),
+:global(.mud-theme-dark .monitored-system-sync-dialog .e-dlg-header-content),
+:global(.mud-theme-dark .monitored-system-sync-dialog .e-footer-content),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark .e-dlg-header-content),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark .e-footer-content) {
+    background: rgba(15, 23, 42, 0.96);
     color: rgba(248, 250, 252, 0.96);
 }
 
-:global(.mud-theme-dark) .monitored-system-sync-dialog .e-dlg-content {
-    background: rgba(15, 23, 42, 0.94);
+:global(.theme-dark .monitored-system-sync-dialog .e-dlg-content),
+:global(.mud-theme-dark .monitored-system-sync-dialog .e-dlg-content),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark .e-dlg-content) {
+    background: var(--mud-palette-surface) !important;
+    color: var(--mud-palette-text-primary) !important;
 }
 
-:global(.mud-theme-dark) .monitored-system-sync-dialog .register-card {
-    border-color: rgba(129, 140, 248, 0.34);
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 27, 75, 0.72));
+:global(.theme-dark .monitored-system-sync-dialog .register-card),
+:global(.mud-theme-dark .monitored-system-sync-dialog .register-card),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark .register-card) {
+    border-color: var(--mud-palette-divider) !important;
+    background: var(--mud-palette-surface) !important;
 }
 
-:global(.mud-theme-dark) .monitored-system-sync-dialog .preview-card {
-    border-color: rgba(129, 140, 248, 0.28);
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.95), rgba(49, 46, 129, 0.42));
+:global(.theme-dark .monitored-system-sync-dialog .preview-card),
+:global(.mud-theme-dark .monitored-system-sync-dialog .preview-card),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark .preview-card) {
+    border-color: var(--mud-palette-divider) !important;
+    background: var(--mud-palette-background-grey) !important;
 }
 
-:global(.mud-theme-dark) .monitored-system-sync-dialog .hint-text {
-    color: rgba(199, 210, 254, 0.95);
+:global(.theme-dark .monitored-system-sync-dialog .hint-text),
+:global(.mud-theme-dark .monitored-system-sync-dialog .hint-text),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark .hint-text) {
+    color: var(--mud-palette-text-secondary) !important;
+}
+
+:global(.theme-dark .monitored-system-sync-dialog .mud-input-root),
+:global(.theme-dark .monitored-system-sync-dialog .mud-input-slot),
+:global(.theme-dark .monitored-system-sync-dialog .mud-input),
+:global(.mud-theme-dark .monitored-system-sync-dialog .mud-input-root),
+:global(.mud-theme-dark .monitored-system-sync-dialog .mud-input-slot),
+:global(.mud-theme-dark .monitored-system-sync-dialog .mud-input),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark .mud-input-root),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark .mud-input-slot),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark .mud-input) {
+    color: rgba(226, 232, 240, 0.96) !important;
+}
+
+:global(.theme-dark .monitored-system-sync-dialog .mud-input-label),
+:global(.theme-dark .monitored-system-sync-dialog .mud-input-helper-text),
+:global(.mud-theme-dark .monitored-system-sync-dialog .mud-input-label),
+:global(.mud-theme-dark .monitored-system-sync-dialog .mud-input-helper-text),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark .mud-input-label),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark .mud-input-helper-text) {
+    color: rgba(148, 163, 184, 0.95) !important;
+}
+
+:global(.theme-dark .monitored-system-sync-dialog .e-dlg-closeicon-btn .e-btn-icon),
+:global(.mud-theme-dark .monitored-system-sync-dialog .e-dlg-closeicon-btn .e-btn-icon),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark .e-dlg-closeicon-btn .e-btn-icon) {
+    color: rgba(226, 232, 240, 0.94);
+}
+
+:global(.theme-dark .monitored-system-sync-dialog .mud-input-outlined-border),
+:global(.mud-theme-dark .monitored-system-sync-dialog .mud-input-outlined-border),
+:global(.monitored-system-sync-dialog.e-dialog.e-dark .mud-input-outlined-border) {
+    border-color: rgba(129, 140, 248, 0.45) !important;
 }

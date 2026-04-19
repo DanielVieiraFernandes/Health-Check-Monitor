@@ -1,0 +1,72 @@
+.error-report-content {
+    border-radius: 14px;
+    min-width: min(400px, 90vw);
+}
+
+.error-title {
+    letter-spacing: .2px;
+}
+
+.error-report-alert {
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--mud-palette-error) 12%, transparent);
+}
+
+.error-report-list {
+    border-radius: 12px;
+    border: 1px solid var(--mud-palette-divider);
+    background: var(--mud-palette-surface);
+    padding: 6px;
+    max-height: 220px;
+    overflow: auto;
+}
+
+:global(.theme-dark) .error-report-list {
+    border-color: var(--mud-palette-divider);
+    background: var(--mud-palette-surface);
+}
+
+:global(.mud-dialog-container) {
+    z-index: 20050 !important;
+}
+
+:global(.mud-overlay.mud-overlay-dialog) {
+    z-index: 20040 !important;
+}
+
+:global(.mud-dialog .mud-paper) {
+    background: var(--mud-palette-surface);
+}
+
+:global(.mud-dialog.error-report-dialog) {
+    animation: error-dialog-enter .22s cubic-bezier(.22, .8, .28, 1) both;
+    transform-origin: center 42%;
+}
+
+:global(.mud-overlay.mud-overlay-dialog) {
+    animation: error-overlay-enter .2s ease both;
+}
+
+@keyframes error-dialog-enter {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(.985);
+        filter: blur(1px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes error-overlay-enter {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}

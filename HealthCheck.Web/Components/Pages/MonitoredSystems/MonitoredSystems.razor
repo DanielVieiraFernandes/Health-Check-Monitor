@@ -1,116 +1,125 @@
 @page "/sistemas"
 @inject LoadingState loadingState
+@implements IDisposable
 
 <PageTitle>Sistemas Monitorados</PageTitle>
 
-<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="mb-6">
-    <MudStack Spacing="0">
-        <MudText Typo="Typo.h4" Class="font-weight-bold">Sistemas monitorados</MudText>
-        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Visão geral de status e monitoramento em tempo real.</MudText>
-    </MudStack>
-
-    <MudButton Variant="Variant.Filled"
-               Color="Color.Primary"
-               StartIcon="@Icons.Material.Filled.AddCircleOutline"
-               OnClick="OpenCreateDialog"
-               Disabled="loadingState.IsLoading">
-        Novo sistema
-    </MudButton>
-</MudStack>
-
-<MudPaper Class="search-panel pa-4 mb-4" Elevation="1">
-    <MudStack Spacing="3">
-        <MudStack Row="true" Class="search-row" Spacing="2" AlignItems="AlignItems.Center">
-            <MudTextField @bind-Value="searchTerm"
-                          Placeholder="Pesquisar por nome, URL ou status"
-                          Variant="Variant.Outlined"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Search"
-                          Class="search-input"
-                          Disabled="loadingState.IsLoading" />
-
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.Search"
-                       OnClick="LoadMonitoredSystemsData"
-                       Disabled="loadingState.IsLoading">
-                Pesquisar
-            </MudButton>
+<div class="monitored-systems-page">
+    <MudPaper Class="page-hero pa-5 mb-4" Elevation="0">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4" Class="font-weight-bold">Sistemas monitorados</MudText>
+            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Visão geral de status e monitoramento em tempo real.</MudText>
         </MudStack>
 
-        <MudDivider />
-
-        <MudStack Spacing="1">
-            <MudText Typo="Typo.subtitle2" Class="font-weight-medium">Filtros adicionais (em breve)</MudText>
-            <MudPaper Class="future-filters pa-3" Elevation="0">
-                <MudStack Row="true" Spacing="1" Class="filter-chip-row">
-                    <MudChip T="string" Variant="Variant.Outlined" Color="Color.Info" Label="true" Disabled="true">Status</MudChip>
-                    <MudChip T="string" Variant="Variant.Outlined" Color="Color.Info" Label="true" Disabled="true">Intervalo</MudChip>
-                    <MudChip T="string" Variant="Variant.Outlined" Color="Color.Info" Label="true" Disabled="true">Última checagem</MudChip>
-                </MudStack>
-            </MudPaper>
-        </MudStack>
-    </MudStack>
-</MudPaper>
-
-@if (isLoaded && monitoredSystems.Count == 0)
-{
-    <MudPaper Class="empty-state pa-8" Elevation="0">
-        <MudStack AlignItems="AlignItems.Center" Spacing="1">
-            <MudIcon Icon="@Icons.Material.Filled.Inbox" Size="Size.Large" Color="Color.Info" />
-            <MudText Typo="Typo.h6">Nenhum sistema monitorado encontrado</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Registre o primeiro sistema para iniciar o monitoramento.</MudText>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.AddCircleOutline"
+                   OnClick="OpenCreateDialog"
+                   Disabled="loadingState.IsLoading">
+            Novo sistema
+        </MudButton>
         </MudStack>
     </MudPaper>
-}
-else
-{
-    <MudGrid>
-        @foreach (var system in monitoredSystems)
-        {
-            <MudItem xs="12" sm="6" lg="4">
-                <MudPaper Class="system-card pa-4"
-                          Elevation="2"
-                          role="button"
-                          tabindex="0"
-                          @onclick="() => OpenEditDialog(system.Id)">
-                    <MudStack Spacing="2">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                            <MudText Typo="Typo.h6" Class="font-weight-bold">@system.Name</MudText>
-                            <MudChip T="string" Label="true" Variant="Variant.Filled" Color="@GetStatusColor(system.LastStatus)">
-                                @system.LastStatus.GetDescription()
-                            </MudChip>
-                        </MudStack>
 
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="url-line">
-                            <MudIcon Icon="@Icons.Material.Filled.Public" Size="Size.Small" Color="Color.Info" />
-                            <MudLink Href="@system.Url" Target="_blank" Typo="Typo.body2" @onclick:stopPropagation="true">@system.Url</MudLink>
-                        </MudStack>
+    <MudPaper Class="search-panel pa-4 mb-4" Elevation="1">
+        <MudStack Spacing="3">
+            <MudStack Row="true" Class="search-row" Spacing="2" AlignItems="AlignItems.Center">
+                <MudTextField @bind-Value="searchTerm"
+                              Placeholder="Pesquisar por nome, URL ou status"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Class="search-input"
+                              Disabled="loadingState.IsLoading" />
 
-                        <MudDivider />
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Search"
+                           OnClick="LoadMonitoredSystemsData"
+                           Disabled="loadingState.IsLoading">
+                    Pesquisar
+                </MudButton>
+            </MudStack>
 
-                        <MudGrid>
-                            <MudItem xs="6">
-                                <MudStack Spacing="0">
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Intervalo</MudText>
-                                    <MudText Typo="Typo.body1">@system.IntervalInMinutes min</MudText>
-                                </MudStack>
-                            </MudItem>
-                            <MudItem xs="6">
-                                <MudStack Spacing="0" AlignItems="AlignItems.End">
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Última checagem</MudText>
-                                    <MudText Typo="Typo.body1">@system.LastCheckedAt.ToString("dd/MM/yyyy HH:mm")</MudText>
-                                </MudStack>
-                            </MudItem>
-                        </MudGrid>
+            <MudDivider />
+
+            <MudStack Spacing="1">
+                <MudText Typo="Typo.subtitle2" Class="font-weight-medium">Filtros adicionais (em breve)</MudText>
+                <MudPaper Class="future-filters pa-3" Elevation="0">
+                    <MudStack Row="true" Spacing="1" Class="filter-chip-row">
+                        <MudChip T="string" Variant="Variant.Outlined" Color="Color.Info" Label="true" Disabled="true">Status</MudChip>
+                        <MudChip T="string" Variant="Variant.Outlined" Color="Color.Info" Label="true" Disabled="true">Intervalo</MudChip>
+                        <MudChip T="string" Variant="Variant.Outlined" Color="Color.Info" Label="true" Disabled="true">Última checagem</MudChip>
                     </MudStack>
                 </MudPaper>
-            </MudItem>
-        }
-    </MudGrid>
-}
+            </MudStack>
+        </MudStack>
+    </MudPaper>
 
-<EditMonitoredSystem @bind-Visible="isFormDialogVisible"
+    @if (isLoaded && monitoredSystems.Count == 0)
+    {
+        <MudPaper Class="empty-state pa-8" Elevation="0">
+            <MudStack AlignItems="AlignItems.Center" Spacing="1">
+                <MudIcon Icon="@Icons.Material.Filled.Inbox" Size="Size.Large" Color="Color.Info" />
+                <MudText Typo="Typo.h6">Nenhum sistema monitorado encontrado</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Registre o primeiro sistema para iniciar o monitoramento.</MudText>
+            </MudStack>
+        </MudPaper>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var system in monitoredSystems)
+            {
+                <MudItem xs="12" sm="6" lg="4">
+                    <div class="system-card-shell" role="button" tabindex="0" @onclick="() => OpenEditDialog(system.Id)">
+                        <MudPaper Class="system-card pa-4" Elevation="2">
+                            <MudStack Spacing="2">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                    <MudText Typo="Typo.h6" Class="font-weight-bold">@system.Name</MudText>
+                                    <MudChip T="string" Label="true" Variant="Variant.Filled" Color="@GetStatusColor(system.LastStatus)">
+                                        @system.LastStatus.GetDescription()
+                                    </MudChip>
+                                </MudStack>
+
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="url-line">
+                                    <MudIcon Icon="@Icons.Material.Filled.Public" Size="Size.Small" Color="Color.Info" />
+                                    <MudLink Href="@system.Url" Target="_blank" Typo="Typo.body2" @onclick:stopPropagation="true">@system.Url</MudLink>
+                                </MudStack>
+
+                                <MudDivider />
+
+                                <MudGrid>
+                                    <MudItem xs="6">
+                                        <MudStack Spacing="0">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Intervalo</MudText>
+                                            <MudText Typo="Typo.body1">@system.IntervalInMinutes min</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudStack Spacing="0" AlignItems="AlignItems.End">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Última checagem</MudText>
+                                            <MudText Typo="Typo.body1">@FormatDateTime(system.LastCheckedAt)</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                    <MudItem xs="12">
+                                        <MudStack Spacing="0">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Criado em</MudText>
+                                            <MudText Typo="Typo.body2">@FormatDateTime(system.CreatedAt)</MudText>
+                                        </MudStack>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudStack>
+                        </MudPaper>
+                    </div>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+</div>
+
+<EditMonitoredSystem  @bind-Visible="isFormDialogVisible"
                            IsCreateMode="selectedMonitoredSystemId == null"
                            MonitoredSystemId="selectedMonitoredSystemId"
                            OnSaved="HandleDialogSaved" />
@@ -124,6 +133,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        loadingState.OnChange += HandleLoadingStateChanged;
+
         try
         {
             loadingState.Show("Carregando sistemas monitorados...");
@@ -137,6 +148,16 @@ else
         {
             loadingState.Hide();
         }
+    }
+
+    private void HandleLoadingStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        loadingState.OnChange -= HandleLoadingStateChanged;
     }
 
     private async Task LoadMonitoredSystemsData()
@@ -153,11 +174,10 @@ else
             }
 
             monitoredSystems = result.Success!.ToList();
-
-        }
+        }   
         catch (Exception)
         {
-            //TODO: GRAVAR O LOG DE ERRO
+            throw;
         }
         finally
         {
@@ -190,4 +210,7 @@ else
             HealthStatus.Unhealthy => Color.Error,
             _ => Color.Default
         };
+
+    private static string FormatDateTime(DateTime? value)
+        => value == null || value <= DateTime.MinValue.AddDays(1) ? "Não informado" : value.Value.ToString("dd/MM/yyyy HH:mm");
 }

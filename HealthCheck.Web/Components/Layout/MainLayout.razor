@@ -1,69 +1,83 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
 @inject LoadingState loadingState
-
+@inject IJSRuntime JS;
 <MudThemeProvider @bind-IsDarkMode="@isDarkMode" Theme="@meuTemaCustomizado" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 <MudPopoverProvider />
 
-<MudLayout>
-    <MudAppBar Elevation="1" Fixed="true">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        
-        <MudIcon Icon="@Icons.Material.Filled.MonitorHeart" Class="ml-3 mr-2" />
-        <MudText Typo="Typo.h6" Class="font-weight-bold">HealthCheck Monitor</MudText>
-        
-        <MudSpacer />
-        
-        <MudTooltip Text="Alternar Tema">
-            <MudIconButton Icon="@(isDarkMode? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                           Color="Color.Inherit"
-                           OnClick="@ToggleDarkMode" />
-        </MudTooltip>
-    </MudAppBar>
+<div class="layout-root @(isDarkMode ? "theme-dark" : "theme-light")">
+    <MudLayout Class="hc-layout">
+        <MudAppBar Elevation="0" Fixed="true" Class="hc-appbar">
+            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
 
-    @* Menu Lateral (Drawer) com ClipMode para nascer ABAIXO do AppBar *@
-    <MudDrawer @bind-Open="drawerOpen"
-               Elevation="2"
-               Variant="@DrawerVariant.Mini"
-               OpenMiniOnHover="true"
-               ClipMode="DrawerClipMode.Always">
-        
-        <MudNavMenu Class="pt-4">
-            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard" IconColor="Color.Info">Dashboard</MudNavLink>
-            <MudNavLink Href="/sistemas" Icon="@Icons.Material.Filled.Dns" IconColor="Color.Success">Sistemas</MudNavLink>
-            <MudNavLink Href="/historico" Icon="@Icons.Material.Filled.History" IconColor="Color.Warning">Histórico</MudNavLink>
-            <MudNavLink Href="/configuracoes" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Secondary">Configurações</MudNavLink>
-        </MudNavMenu>
-    </MudDrawer>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="ml-2">
+                <MudAvatar Icon="@Icons.Material.Filled.MonitorHeart" Size="Size.Medium" Class="hc-brand-avatar" />
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.subtitle1" Class="font-weight-bold">HealthCheck Monitor</MudText>
+                    <MudText Typo="Typo.caption" Class="hc-brand-subtitle">Observabilidade operacional</MudText>
+                </MudStack>
+            </MudStack>
 
-    <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pt-6 pb-6">
-            @* Chama a sua classe customizada *@
-            <CustomErrorBoundary @ref="meuBoundary">
-            
-                @* O que renderizar quando tudo está bem *@
-                <ChildContent>
-                    @Body
-                </ChildContent>
+            <MudSpacer />
 
-                @* O que renderizar quando o Gremlin ataca 😈 *@
-                <ErrorContent Context="excecao">
-                    <div class="alert alert-danger" style="margin: 20px; padding: 20px; border-radius: 8px;">
-                        <h2>😈 O Gremlin atacou nossa página!</h2>
-                        <p>Desculpe, algo deu errado. Nossa equipe de suporte aos gremlins já foi avisada (via log).</p>
-                    
-                        <button class="btn btn-warning" @onclick="TentarNovamente">
-                            Tentar Carregar Novamente
-                        </button>
-                    </div>
-                </ErrorContent>
+            <MudChip T="string" Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small" Class="mr-2">
+                ONLINE
+            </MudChip>
 
-            </CustomErrorBoundary>
-        </MudContainer>
-    </MudMainContent>
-</MudLayout>
+            <MudTooltip Text="Alternar Tema">
+                <MudIconButton Icon="@(isDarkMode? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                               Color="Color.Inherit"
+                               OnClick="@ToggleDarkMode" />
+            </MudTooltip>
+        </MudAppBar>
+
+        <MudDrawer @bind-Open="drawerOpen"
+                   Elevation="0"
+                   Variant="@DrawerVariant.Mini"
+                   OpenMiniOnHover="true"
+                   ClipMode="DrawerClipMode.Always"
+                   Class="hc-drawer">
+
+            <MudNavMenu Class="hc-nav-menu pt-4">
+                <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard" IconColor="Color.Info">Dashboard</MudNavLink>
+                <MudNavLink Href="/sistemas" Icon="@Icons.Material.Filled.Dns" IconColor="Color.Success">Sistemas</MudNavLink>
+                <MudNavLink Href="/historico" Icon="@Icons.Material.Filled.History" IconColor="Color.Warning">Histórico</MudNavLink>
+                <MudNavLink Href="/configuracoes" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Secondary">Configurações</MudNavLink>
+            </MudNavMenu>
+        </MudDrawer>
+
+        <MudMainContent Class="hc-main-content">
+            <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="hc-content-wrapper pt-6 pb-6">
+                <CascadingValue Name="IsDarkMode" Value="isDarkMode">
+                    <CustomErrorBoundary @ref="meuBoundary">
+                        <ChildContent>
+                            @Body
+                        </ChildContent>
+
+                        <ErrorContent Context="excecao">
+                            <MudPaper Class="error-boundary-card pa-5" Elevation="0">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Error" Size="Size.Large" />
+                                    <MudText Typo="Typo.h6" Class="font-weight-bold">Algo inesperado aconteceu.</MudText>
+                                </MudStack>
+
+                                <MudText Typo="Typo.body2" Class="mb-4">
+                                    O erro foi capturado e registrado. Você pode tentar recarregar o conteúdo agora.
+                                </MudText>
+
+                                <MudButton Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Refresh" OnClick="TentarNovamente">
+                                    Tentar novamente
+                                </MudButton>
+                            </MudPaper>
+                        </ErrorContent>
+                    </CustomErrorBoundary>
+                </CascadingValue>
+            </MudContainer>
+        </MudMainContent>
+    </MudLayout>
+</div>
 
 @if (loadingState.IsLoading)
 {
@@ -124,6 +138,14 @@
         loadingState.OnChange += HandleLoadingStateChanged;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("toggleTheme", isDarkMode ? "fluent2-dark" : "fluent2");
+        }
+    }
+
     public void Dispose()
     {
         loadingState.OnChange -= HandleLoadingStateChanged;
@@ -139,8 +161,9 @@
         drawerOpen = !drawerOpen;
     }
 
-    private void ToggleDarkMode()
+    private async Task ToggleDarkMode()
     {
         isDarkMode = !isDarkMode;
+        await JS.InvokeVoidAsync("toggleTheme", isDarkMode ? "fluent2-dark" : "fluent2");
     }
 }

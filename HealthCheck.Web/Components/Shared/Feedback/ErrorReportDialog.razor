@@ -1,19 +1,17 @@
-<MudDialog>
+<MudDialog Class="error-report-dialog">
     <DialogContent>
-        <MudStack Spacing="2">
-            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true">
+        <MudStack Spacing="2" Class="error-report-content pa-1">
+            <MudText Typo="Typo.h6" Class="font-weight-bold error-title">Falha na operação</MudText>
+
+            <MudAlert Severity="Severity.Error" Variant="Variant.Text" Dense="true" Class="error-report-alert">
                 @Title
             </MudAlert>
 
-            @if (StatusCode is not null)
-            {
-                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    Código de status: @((int)StatusCode) (@StatusCode)
-                </MudText>
-            }
+            <MudDivider />
 
-            <MudText Typo="Typo.subtitle2" Class="mt-2">Detalhes</MudText>
-            <MudList T="string" Dense="true">
+            <MudText Typo="Typo.subtitle2">Detalhes</MudText>
+
+            <MudList T="string" Dense="true" Class="error-report-list">
                 @if (Errors.Count == 0)
                 {
                     <MudListItem T="string">Nenhum detalhe adicional foi informado.</MudListItem>
@@ -30,7 +28,7 @@
     </DialogContent>
 
     <DialogActions>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Close">Fechar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CheckCircle" OnClick="Close">Entendi</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -38,7 +36,6 @@
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter] public string Title { get; set; } = "Falha ao processar operação";
-    [Parameter] public System.Net.HttpStatusCode? StatusCode { get; set; }
     [Parameter] public List<string> Errors { get; set; } = [];
 
     private void Close() => MudDialog.Close();
