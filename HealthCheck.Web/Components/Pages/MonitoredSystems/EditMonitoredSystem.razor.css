@@ -68,6 +68,10 @@
     border-top: 1px solid var(--mud-palette-divider) !important;
     padding: 14px 18px;
     background: var(--mud-palette-background-grey) !important;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
 }
 
 :global(.monitored-system-sync-dialog .register-card) {
@@ -100,6 +104,26 @@
 
 :global(.monitored-system-sync-dialog .e-btn.e-flat) {
     border-radius: 10px;
+}
+
+:global(.monitored-system-sync-dialog .e-footer-content .delete-footer-button) {
+    margin-right: auto !important;
+}
+
+:global(.monitored-system-sync-dialog .e-btn.e-danger) {
+    border-radius: 10px;
+    border-color: transparent !important;
+    background: #dc2626 !important;
+    color: #fff !important;
+    box-shadow: none !important;
+    transition: background-color .18s ease, transform .18s ease;
+}
+
+:global(.monitored-system-sync-dialog .e-btn.e-danger:hover),
+:global(.monitored-system-sync-dialog .e-btn.e-danger:focus-visible) {
+    background: #b91c1c !important;
+    color: #fff !important;
+    transform: translateY(-1px);
 }
 
 :global(.monitored-system-sync-dialog-dark .e-dialog) {
@@ -146,6 +170,11 @@
 
 :global(.monitored-system-sync-dialog-dark .e-dlg-closeicon-btn .e-btn-icon) {
     color: rgba(226, 232, 240, 0.94) !important;
+}
+
+:global(.monitored-system-sync-dialog-dark .e-btn.e-danger) {
+    background: #dc2626 !important;
+    color: #fff !important;
 }
 
 :global(.theme-dark .monitored-system-sync-dialog .e-dialog),

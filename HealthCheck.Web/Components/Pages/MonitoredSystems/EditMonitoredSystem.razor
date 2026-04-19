@@ -91,11 +91,15 @@
     </DialogTemplates>
 
     <DialogButtons>
-        <DialogButton Content="Cancelar" IsPrimary="false" CssClass="e-flat" Disabled="loadingState.IsLoading" OnClick="OnCancelClick"></DialogButton>
+        @if (!IsCreateMode)
+        {
+            <DialogButton Content="Excluir" IsPrimary="false" CssClass="e-danger delete-footer-button" Disabled="loadingState.IsLoading" OnClick="OnDeleteClick"></DialogButton>
+        }
+        <DialogButton Content="Cancelar" IsPrimary="false" CssClass="e-flat" Disabled="loadingState.IsLoading" OnClick="async Task() => await SetVisible(false)"></DialogButton>
         <DialogButton Content="@SaveButtonText" IsPrimary="true" CssClass="e-primary" Disabled="loadingState.IsLoading" OnClick="SaveData"></DialogButton>
     </DialogButtons>
 
-    <DialogEvents OnClose="OnDialogClose" />
+    <DialogEvents OnClose="async Task() => await SetVisible(false)" />
 </SfDialog>
 
 @code {
@@ -104,6 +108,14 @@
 
     [Parameter]
     public bool IsCreateMode { get; set; }
+
+    //********************************************************************************************************************************
+    // Quando usamos o @bind-Visible, o Blazor espera que tenhamos tanto a propriedade Visible
+    // quanto o EventCallback VisibleChanged para funcionar corretamente, pois, internamente, o @bind-Visible
+    // é apenas uma sintaxe açucarada para vincular a propriedade Visible e o evento VisibleChanged.
+    // Quando chamamos SetVisible(false) dentro do método SaveData ou OnDeleteClick, estamos atualizando a propriedade Visible,
+    // o que, por sua vez, aciona o EventCallback VisibleChanged para notificar o componente pai sobre a mudança de estado.
+    //********************************************************************************************************************************
 
     [Parameter] 
     public bool Visible { get; set; }
@@ -118,7 +130,6 @@
     public EventCallback OnSaved { get; set; }
 
     private readonly Dictionary<string, string> fieldErrors = [];
-    private readonly CreateMonitoredSystemValidator validator = new();
 
     private MonitoredSystem monitoredSystem { get; set; } = new();
     private MonitoredSystem originalMonitoredSystem { get; set; } = new();
@@ -129,34 +140,68 @@
 
     protected override async Task OnParametersSetAsync()
     {
+        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        // Garante que os métodos abaixo sejam chamados somente quando o componente estiver visível
+        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        if (!Visible)
+            return;
+
+        ResetFieldErrors();
+
+        // CASO ESTEJA EM MODO DE INCLUSÃO
         if (IsCreateMode)
         {
-            await InitializeDialogData();
+            InitializeDialogData();
             return;
         }
 
         await LoadMonitoredSystemData(MonitoredSystemId!.Value);
     }
 
-    private async Task InitializeDialogData()
+    private void InitializeDialogData()
     {
         monitoredSystem = new();
         originalMonitoredSystem = monitoredSystem.Clone();
     }
 
-    private async Task OnCancelClick(object _)
+    private async Task OnDeleteClick(object _)
     {
-        await CloseDialog();
-    }
-    private async Task OnDialogClose()
-    {
-        await SetVisible(false);
+        if (IsCreateMode || loadingState.IsLoading)
+            return;
+
+        var idToDelete = monitoredSystem.Id != Guid.Empty ? monitoredSystem.Id : MonitoredSystemId;
+
+        if (idToDelete is null || idToDelete == Guid.Empty)
+        {
+            snackbar.Add("Não foi possível identificar o sistema monitorado para exclusão.", Severity.Error);
+            return;
+        }
+
+        var parameters = new DialogParameters
+        {
+            [nameof(ConfirmDeleteMonitoredSystemDialog.Name)] = monitoredSystem.Name,
+            [nameof(ConfirmDeleteMonitoredSystemDialog.Url)] = monitoredSystem.Url,
+            [nameof(ConfirmDeleteMonitoredSystemDialog.CreatedAt)] = monitoredSystem.CreatedAt
+        };
+
+        var options = new MudBlazor.DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteMonitoredSystemDialog>("Confirmar exclusão", parameters, options);
+        var result = await dialog.Result;
+
+        if (result!.Canceled)
+            return;
+
+        await DeleteData(idToDelete.Value);
     }
 
     private async Task SaveData()
     {
-        ResetFieldErrors();
-
         try
         {
             loadingState.Show(IsCreateMode ? "Registrando sistema monitorado..." : "Salvando alterações do sistema monitorado...");
@@ -184,12 +229,24 @@
             }
             else
             {
-                await monitoredSystemService.UpdateMonitoredSystem(monitoredSystem);
+                var result = await monitoredSystemService.UpdateMonitoredSystem(monitoredSystem);
+
+                if (result.IsFailure)
+                {
+                    if(result.Failure!.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                    {
+                        ApplyFieldErrors(result.Failure);
+                    }
+
+                    await ShowFailureDialog("Falha ao atualizar sistema", result.Failure);
+                    return;
+                }
+
                 snackbar.Add("Sistema monitorado atualizado com sucesso.", Severity.Success);
             }   
 
             await OnSaved.InvokeAsync();
-            await CloseDialog();
+            await SetVisible(false);
         }
         catch (Exception)
         {
@@ -213,7 +270,7 @@
             if (result.IsFailure)
             {
                 await ShowFailureDialog("Falha ao buscar dados do sistema monitorado", result.Failure);
-                await CloseDialog();
+                await SetVisible(false);
                 return;
             }
 
@@ -223,7 +280,11 @@
         catch (Exception)
         {
             snackbar.Add("Não foi possível carregar os dados do sistema monitorado.", Severity.Error);
-            await CloseDialog();
+            await SetVisible(false);
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            // Lançar a exceção para que o CustomErrorBoundary possa capturá-la e registrar o log detalhado do erro
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            throw;
         }
         finally
         {
@@ -249,9 +310,33 @@
         await DialogService.ShowAsync<ErrorReportDialog>("", parameters, options);
     }
 
-    private async Task CloseDialog()
+    private async Task DeleteData(Guid idToDelete)
     {
-        await SetVisible(false);
+        try
+        {
+            loadingState.Show("Excluindo sistema monitorado...");
+
+            var result = await monitoredSystemService.DeleteMonitoredSystem(idToDelete);
+
+            if (result.IsFailure)
+            {
+                await ShowFailureDialog("Falha ao excluir sistema", result.Failure);
+                return;
+            }
+
+            snackbar.Add("Sistema monitorado excluído com sucesso.", Severity.Success);
+            await OnSaved.InvokeAsync();
+            await SetVisible(false);
+        }
+        catch (Exception)
+        {
+            snackbar.Add("Não foi possível excluir o sistema monitorado.", Severity.Error);
+            throw;
+        }
+        finally
+        {
+            loadingState.Hide();
+        }
     }
 
     private async Task SetVisible(bool visible)

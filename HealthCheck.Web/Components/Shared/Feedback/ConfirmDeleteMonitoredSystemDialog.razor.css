@@ -1,0 +1,13 @@
+.confirm-delete-content {
+    min-width: min(460px, 92vw);
+}
+
+.confirm-delete-details {
+    border-radius: 12px;
+    border: 1px solid var(--mud-palette-divider);
+    background: var(--mud-palette-surface);
+}
+
+.confirm-delete-url {
+    overflow-wrap: anywhere;
+}
