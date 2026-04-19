@@ -41,11 +41,12 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
         return Result<IList<MonitoredSystem>>.AsSuccess(monitoredSystems);
     }
 
-    public async Task UpdateMonitoredSystem(MonitoredSystem monitoredSystem)
+    public async Task<Result<object>> UpdateMonitoredSystem(MonitoredSystem monitoredSystem)
     {
         await monitoredSystemRepository.Update(monitoredSystem);
-    }
 
+        return Result<object>.AsSuccess(new { });
+    }
     public async Task<Result<object>> DeleteMonitoredSystem(Guid id)
     {
         var monitoredSystem = await monitoredSystemRepository.GetById(id);

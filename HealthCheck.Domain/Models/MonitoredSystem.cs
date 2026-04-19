@@ -9,5 +9,6 @@ public class MonitoredSystem
     public string Url { get; set; } = string.Empty;
     public int IntervalInMinutes { get; set; } = 480;
     public HealthStatus LastStatus { get; set; } = HealthStatus.Unknown;
-    public DateTime LastCheckedAt { get; set; }
+    public DateTime? LastCheckedAt { get; set; } = null;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 }

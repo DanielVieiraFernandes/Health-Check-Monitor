@@ -29,7 +29,8 @@ public class DatabaseService
             sql.Append("url TEXT NOT NULL, ");
             sql.Append("interval_in_minutes INT NOT NULL, ");
             sql.Append("last_status INT NOT NULL DEFAULT 1, ");
-            sql.Append("last_checked_at TIMESTAMP WITHOUT TIME ZONE ");
+            sql.Append("last_checked_at TIMESTAMP WITHOUT TIME ZONE, ");
+            sql.Append("created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()");
             sql.Append("); ");
 
             await _connection.ExecuteAsync(sql.ToString());
