@@ -73,10 +73,10 @@
                             <MudDivider />
 
                             <MudText Typo="Typo.caption" Color="Color.Secondary">Nome</MudText>
-                            <MudText Typo="Typo.body1">@GetPreviewName()</MudText>
+                            <MudText Typo="Typo.body1" Class="preview-name" Title="@GetPreviewName()">@GetPreviewName()</MudText>
 
                             <MudText Typo="Typo.caption" Color="Color.Secondary">URL</MudText>
-                            <MudText Typo="Typo.body2" Class="preview-url">@GetPreviewUrl()</MudText>
+                            <MudText Typo="Typo.body2" Class="preview-url" Title="@GetPreviewUrl()">@GetPreviewUrl()</MudText>
 
                             @if (!IsCreateMode)
                             {
@@ -184,7 +184,22 @@
             }
             else
             {
-                await monitoredSystemService.UpdateMonitoredSystem(monitoredSystem);
+                var result = await monitoredSystemService.UpdateMonitoredSystem(monitoredSystem);
+
+                if (result.IsFailure)
+                {
+                    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    // Caso tenha ocorrido um erro de validação, exibir mensagens específicas para cada campo
+                    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    if (result.Failure!.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                    {
+                        ApplyFieldErrors(result.Failure);
+                    }
+
+                    await ShowFailureDialog("Falha ao registrar sistema", result.Failure);
+                    return;
+                }
+
                 snackbar.Add("Sistema monitorado atualizado com sucesso.", Severity.Success);
             }   
 
@@ -259,6 +274,7 @@
         if (Visible == visible)
             return;
 
+        ResetFieldErrors();
         Visible = visible;
         await VisibleChanged.InvokeAsync(visible);
     }

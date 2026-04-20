@@ -1,6 +1,8 @@
 ﻿using FluentValidation.Results;
+using HealthCheck.Framework.Helpers;
 using HealthCheck.Framework.Models;
 using HealthCheck.Framework.Repositories.MonitoredSystemRepository;
+using HealthCheck.Framework.Services.Filters;
 using System.Net;
 
 namespace HealthCheck.Framework.Services.Database.MonitoredSystemService;
@@ -9,6 +11,8 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
 {
     public async Task<Result<MonitoredSystem>> CreateMonitoredSystem(MonitoredSystem monitoredSystem)
     {
+        NormalizeMonitoredSystem(monitoredSystem);
+
         CreateMonitoredSystemValidator validator = new();
 
         var validationResult = validator.Validate(monitoredSystem);
@@ -35,14 +39,36 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
         return Result<MonitoredSystem>.AsSuccess(monitoredSystem);
     }
 
-    public async Task<Result<IList<MonitoredSystem>>> GetAllMonitoredSystems()
+    public async Task<Result<IList<MonitoredSystem>>> GetAllMonitoredSystems(SearchFiltersMonitoredSystems? searchFiltersMonitoredSystems = null)
     {
-        var monitoredSystems = await monitoredSystemRepository.GetAll();
+        if (searchFiltersMonitoredSystems != null)
+        {
+            NormalizeSearchFilters(searchFiltersMonitoredSystems);
+
+            SearchFiltersMonitoredSystemsValidator validator = new();
+
+            var validationResult = validator.Validate(searchFiltersMonitoredSystems);
+
+            if (!validationResult.IsValid)
+                return Result<IList<MonitoredSystem>>.AsFailure(new Failure(HttpStatusCode.BadRequest, validationResult));
+        }
+
+        var monitoredSystems = await monitoredSystemRepository.GetAll(searchFiltersMonitoredSystems);
+
         return Result<IList<MonitoredSystem>>.AsSuccess(monitoredSystems);
     }
 
     public async Task<Result<object>> UpdateMonitoredSystem(MonitoredSystem monitoredSystem)
     {
+        NormalizeMonitoredSystem(monitoredSystem);
+
+        CreateMonitoredSystemValidator validator = new();
+
+        var validationResult = validator.Validate(monitoredSystem);
+
+        if (!validationResult.IsValid)
+            return Result<object>.AsFailure(new Failure(HttpStatusCode.BadRequest, validationResult));
+
         await monitoredSystemRepository.Update(monitoredSystem);
 
         return Result<object>.AsSuccess(new { });
@@ -65,5 +91,16 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
     {
         var errors = messages.Select(message => new ValidationFailure(string.Empty, message)).ToList();
         return new ValidationResult(errors);
+    }
+
+    private static void NormalizeMonitoredSystem(MonitoredSystem monitoredSystem)
+    {
+        monitoredSystem.Name = monitoredSystem.Name.NormalizeWhiteSpaces();
+        monitoredSystem.Url = monitoredSystem.Url.NormalizeWhiteSpaces();
+    }
+
+    private static void NormalizeSearchFilters(SearchFiltersMonitoredSystems searchFiltersMonitoredSystems)
+    {
+        searchFiltersMonitoredSystems.SearchTerm = searchFiltersMonitoredSystems.SearchTerm.NormalizeWhiteSpaces();
     }
 }

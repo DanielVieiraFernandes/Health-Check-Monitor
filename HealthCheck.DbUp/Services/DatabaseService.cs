@@ -26,6 +26,7 @@ public class DatabaseService
             sql.Append("CREATE TABLE monitored_systems ( ");
             sql.Append("id UUID PRIMARY KEY DEFAULT uuidv7(), ");
             sql.Append("name VARCHAR(255) NOT NULL, ");
+            sql.Append("description TEXT NOT NULL DEFAULT '', ");
             sql.Append("url TEXT NOT NULL, ");
             sql.Append("interval_in_minutes INT NOT NULL, ");
             sql.Append("last_status INT NOT NULL DEFAULT 1, ");

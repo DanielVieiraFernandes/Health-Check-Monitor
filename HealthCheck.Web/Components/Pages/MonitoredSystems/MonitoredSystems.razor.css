@@ -47,6 +47,19 @@
     color: var(--mud-palette-text-secondary) !important;
 }
 
+.monitored-systems-page ::deep .system-card .system-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 8px;
+}
+
+.monitored-systems-page ::deep .system-card .mud-chip {
+    flex: 0 0 auto;
+}
+
 .monitored-systems-page ::deep .system-card::before {
     content: "";
     position: absolute;
@@ -77,9 +90,14 @@
 
 .url-line {
     overflow: hidden;
+    min-width: 0;
 }
 
-.url-line ::deep a {
+.url-line ::deep .system-url {
+    display: inline-block;
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
