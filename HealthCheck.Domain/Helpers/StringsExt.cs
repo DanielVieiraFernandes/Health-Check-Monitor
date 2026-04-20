@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using System.Text.RegularExpressions;
 
 namespace HealthCheck.Framework.Helpers;
 
@@ -27,5 +28,15 @@ public static class StringsExt
             }
         }
         return stringBuilder.ToString();
+    }
+
+    public static string NormalizeWhiteSpaces(this string? str)
+    {
+        if (string.IsNullOrWhiteSpace(str))
+            return string.Empty;
+
+        var trimmed = str.Trim();
+
+        return Regex.Replace(trimmed, @"\s+", " ");
     }
 }

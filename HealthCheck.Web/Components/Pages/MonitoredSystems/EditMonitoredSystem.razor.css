@@ -85,6 +85,7 @@
     border: 1px solid var(--mud-palette-divider) !important;
     background: var(--mud-palette-background-grey) !important;
     min-height: 100%;
+    overflow: hidden;
 }
 
 :global(.monitored-system-sync-dialog .hint-text) {
@@ -93,7 +94,21 @@
 }
 
 :global(.monitored-system-sync-dialog .preview-url) {
-    overflow-wrap: anywhere;
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+:global(.monitored-system-sync-dialog .preview-name) {
+    display: block;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 :global(.monitored-system-sync-dialog .e-btn.e-primary) {

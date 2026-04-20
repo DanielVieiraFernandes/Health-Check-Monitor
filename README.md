@@ -73,17 +73,6 @@ Essa divisão favorece **manutenção**, **evolução incremental** e **separaç
 
 ---
 
-## 💼 Destaques para Recrutadores
-
-Este projeto evidencia:
-
-- 🏛️ Organização arquitetural por responsabilidades
-- 🧪 Fundação pronta para crescimento com boas práticas
-- 🎨 Preocupação com UX/UI em aplicação corporativa
-- 📈 Direcionamento claro para funcionalidades de observabilidade
-
----
-
 ## 🔐 Aviso Importante de Uso
 
 🚫 **Este projeto NÃO possui licença de uso aberta.**  
