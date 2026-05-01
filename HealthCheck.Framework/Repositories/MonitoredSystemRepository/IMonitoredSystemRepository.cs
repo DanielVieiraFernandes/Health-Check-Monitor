@@ -1,5 +1,5 @@
 ﻿using HealthCheck.Framework.Models;
-using HealthCheck.Framework.Services.Filters;
+using HealthCheck.Framework.Services.Database.MonitoredSystemService.Filters;
 using Npgsql;
 
 namespace HealthCheck.Framework.Repositories.MonitoredSystemRepository;

@@ -21,6 +21,12 @@
     color: white;
 }
 
+.layout-root ::deep .hc-brand-title {
+    background: -webkit-linear-gradient(45deg, #6366F1, #0EA5E9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
 .hc-brand-subtitle {
     color: rgba(226, 232, 240, 0.86);
 }

@@ -29,4 +29,10 @@ public sealed class LoadingState
 
         OnChange?.Invoke();
     }
+
+    public void SetMessage(string message)
+    {
+        Message = message;
+        OnChange?.Invoke();
+    }
 }

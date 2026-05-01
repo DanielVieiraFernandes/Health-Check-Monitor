@@ -229,7 +229,7 @@
             }
             else
             {
-                var result = await monitoredSystemService.UpdateMonitoredSystem(monitoredSystem);
+                var result = await monitoredSystemService.UpdateMonitoredSystem(monitoredSystem, originalMonitoredSystem, "user");
 
                 if (result.IsFailure)
                 {
@@ -316,7 +316,7 @@
         {
             loadingState.Show("Excluindo sistema monitorado...");
 
-            var result = await monitoredSystemService.DeleteMonitoredSystem(idToDelete);
+            var result = await monitoredSystemService.DeleteMonitoredSystem(idToDelete, Guid.NewGuid());
 
             if (result.IsFailure)
             {

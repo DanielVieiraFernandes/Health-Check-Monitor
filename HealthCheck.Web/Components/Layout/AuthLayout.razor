@@ -1,0 +1,86 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject IJSRuntime JS
+@inject LoadingState loadingState
+
+<MudThemeProvider @bind-IsDarkMode="@isDarkMode" Theme="@meuTemaCustomizado" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
+
+<div class="auth-layout-root @(isDarkMode ? "theme-dark" : "theme-light")">
+    <MudMainContent Class="auth-main-content">
+        <MudContainer MaxWidth="MaxWidth.Medium" Class="auth-content-wrapper">
+            @Body
+        </MudContainer>
+    </MudMainContent>
+</div>
+
+@if (loadingState.IsLoading)
+{
+    <div class="global-loading-overlay">
+        <LoadingSpinner Text="@loadingState.Message" SpinnerSize="Size.Large" />
+    </div>
+}
+
+@code {
+    private bool isDarkMode = true;
+
+    private MudTheme meuTemaCustomizado = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = Colors.Indigo.Default,
+            AppbarBackground = Colors.Indigo.Darken2,
+            Background = "#F8FAFC",
+            DrawerBackground = Colors.Shades.White
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = Colors.Indigo.Lighten1,
+            AppbarBackground = "#0B0F19",
+            Background = "#111827",
+            DrawerBackground = "#1F2937",
+        },
+        LayoutProperties = new LayoutProperties()
+        {
+            DefaultBorderRadius = "8px"
+        },
+        Typography = new Typography()
+        {
+            Default = new DefaultTypography()
+            {
+                FontFamily = new[] { "Inter", "Segoe UI", "Arial", "sans-serif" }
+            }
+        }
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("toggleTheme", isDarkMode ? "fluent2-dark" : "fluent2");
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        //==============================================================================================
+        // Mantém o loading global sincronizado durante a tela de login.
+        //==============================================================================================
+        loadingState.OnChange += HandleLoadingStateChanged;
+    }
+
+    public void Dispose()
+    {
+        loadingState.OnChange -= HandleLoadingStateChanged;
+    }
+
+    private void HandleLoadingStateChanged()
+    {
+        //------------------------------------------------------------------------------------------
+        // Re-renderiza o layout quando o LoadingState é atualizado.
+        //------------------------------------------------------------------------------------------
+        InvokeAsync(StateHasChanged);
+    }
+}

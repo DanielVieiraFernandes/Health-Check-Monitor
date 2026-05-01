@@ -10,6 +10,9 @@
 @using HealthCheck.Web.Components
 @using HealthCheck.Web.Components.Layout
 @using HealthCheck.Web.Components.Shared.Feedback
+@using HealthCheck.Web.Services.Authentication
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
 
 @* Importações do Framework *@
 @using HealthCheck.Framework.Enums
@@ -22,8 +25,12 @@
 @using Syncfusion.Blazor.Popups
 
 @inject ISnackbar snackbar
+@inject IJSRuntime JS
 @inject IDialogService dialogService
-@inject NavigationManager navigation
+@inject NavigationManager navigationManager
+@inject AuthenticationStateProvider authenticationStateProvider
+@inject AuthenticationService authenticationService
+@inject LoadingState loadingState
 
 @* Injeção de dependência dos serviços *@
 

@@ -1,5 +1,7 @@
 ﻿using HealthCheck.Framework.Services.Database;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService;
+using HealthCheck.Framework.Services.Database.UsersService;
+using HealthCheck.Framework.Services.Cryptography;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,9 +23,17 @@ public static class DependencyInjection
         if (string.IsNullOrWhiteSpace(pgConnectionString))
             throw new InvalidOperationException("PostgreSQL connection string is not configured.");
 
+        //****************************************************************************************************
+        // ADICIONA UMA INSTÂNCIA PERSONALIZADA DE DatabaseService AO CONTÊINER DE INJEÇÃO DE DEPENDÊNCIA
+        //****************************************************************************************************
         services.AddScoped(c => new DatabaseService(pgConnectionString));
 
+        //****************************************************************************************************
+        // SERVIÇOS
+        //****************************************************************************************************
         services.AddScoped<MonitoredSystemService>();
+        services.AddScoped<UsersService>();
+        services.AddScoped<IPasswordEncrypter, BcryptPasswordEncrypter>();
     }
 
 }

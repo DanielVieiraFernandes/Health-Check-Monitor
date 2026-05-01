@@ -1,7 +1,14 @@
-﻿@inherits LayoutComponentBase
+﻿@using HealthCheck.Web.Components.Pages
+@inherits LayoutComponentBase
 @implements IDisposable
-@inject LoadingState loadingState
 @inject IJSRuntime JS;
+@inject LoadingState loadingState
+@inject NavigationManager navigationManager
+@inject AuthenticationStateProvider authenticationStateProvider
+@inject AuthenticationService authenticationService
+@inject ISnackbar snackbar
+
+
 <MudThemeProvider @bind-IsDarkMode="@isDarkMode" Theme="@meuTemaCustomizado" />
 <MudDialogProvider />
 <MudSnackbarProvider />
@@ -12,19 +19,19 @@
         <MudAppBar Elevation="0" Fixed="true" Class="hc-appbar">
             <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
 
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="ml-2">
-                <MudAvatar Icon="@Icons.Material.Filled.MonitorHeart" Size="Size.Medium" Class="hc-brand-avatar" />
-                <MudStack Spacing="0">
-                    <MudText Typo="Typo.subtitle1" Class="font-weight-bold">HealthCheck Monitor</MudText>
-                    <MudText Typo="Typo.caption" Class="hc-brand-subtitle">Observabilidade operacional</MudText>
-                </MudStack>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="ml-2">
+                <MudText Typo="Typo.h5" Class="font-weight-bold hc-brand-title">Monitoramento Web</MudText>
             </MudStack>
 
             <MudSpacer />
 
-            <MudChip T="string" Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small" Class="mr-2">
-                ONLINE
-            </MudChip>
+            <AuthorizeView>
+                <MudTooltip Text="Sair">
+                    <MudIconButton Icon="@Icons.Material.Filled.Logout"
+                                   Color="Color.Inherit"
+                                   OnClick="HandleLogout" />
+                </MudTooltip>
+            </AuthorizeView>
 
             <MudTooltip Text="Alternar Tema">
                 <MudIconButton Icon="@(isDarkMode? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
@@ -33,46 +40,49 @@
             </MudTooltip>
         </MudAppBar>
 
-        <MudDrawer @bind-Open="drawerOpen"
-                   Elevation="0"
-                   Variant="@DrawerVariant.Mini"
-                   OpenMiniOnHover="true"
-                   ClipMode="DrawerClipMode.Always"
-                   Class="hc-drawer">
+        <AuthorizeView>
+            <MudDrawer @bind-Open="drawerOpen"
+                       Elevation="0"
+                       Variant="@DrawerVariant.Mini"
+                       OpenMiniOnHover="true"
+                       ClipMode="DrawerClipMode.Always"
+                       Class="hc-drawer">
 
-            <MudNavMenu Class="hc-nav-menu pt-4">
-                <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard" IconColor="Color.Info">Dashboard</MudNavLink>
-                <MudNavLink Href="/sistemas" Icon="@Icons.Material.Filled.Dns" IconColor="Color.Success">Sistemas</MudNavLink>
-                <MudNavLink Href="/historico" Icon="@Icons.Material.Filled.History" IconColor="Color.Warning">Histórico</MudNavLink>
-                <MudNavLink Href="/configuracoes" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Secondary">Configurações</MudNavLink>
-            </MudNavMenu>
-        </MudDrawer>
+                <MudNavMenu Class="hc-nav-menu pt-4">
+                    <MudNavLink Href="/dash" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard" IconColor="Color.Info">Dashboard</MudNavLink>
+                    <MudNavLink Href="/sistemas" Icon="@Icons.Material.Filled.Dns" IconColor="Color.Success">Sistemas</MudNavLink>
+                    <MudNavLink Href="/historico" Icon="@Icons.Material.Filled.History" IconColor="Color.Warning">Histórico</MudNavLink>
+                    <MudNavLink Href="/configuracoes" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Secondary">Configurações</MudNavLink>
+                </MudNavMenu>
+            </MudDrawer>
+        </AuthorizeView>
 
         <MudMainContent Class="hc-main-content">
             <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="hc-content-wrapper pt-6 pb-6">
                 <CascadingValue Name="IsDarkMode" Value="isDarkMode">
-                    <CustomErrorBoundary @ref="meuBoundary">
-                        <ChildContent>
-                            @Body
-                        </ChildContent>
+                    <CascadingValue Name="UserSession" Value="sessionInfo">
+                        <CustomErrorBoundary @ref="meuBoundary">
+                            <ChildContent>
+                                @Body
+                            </ChildContent>
+                            <ErrorContent Context="excecao">
+                                <MudPaper Class="error-boundary-card pa-5" Elevation="0">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Error" Size="Size.Large" />
+                                        <MudText Typo="Typo.h6" Class="font-weight-bold">Algo inesperado aconteceu.</MudText>
+                                    </MudStack>
 
-                        <ErrorContent Context="excecao">
-                            <MudPaper Class="error-boundary-card pa-5" Elevation="0">
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
-                                    <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Error" Size="Size.Large" />
-                                    <MudText Typo="Typo.h6" Class="font-weight-bold">Algo inesperado aconteceu.</MudText>
-                                </MudStack>
+                                    <MudText Typo="Typo.body2" Class="mb-4">
+                                        Ocorreu uma exceção na aplicação, recarregue a página ou entre em contato com o suporte se o problema persistir.
+                                    </MudText>
 
-                                <MudText Typo="Typo.body2" Class="mb-4">
-                                    O erro foi capturado e registrado. Você pode tentar recarregar o conteúdo agora.
-                                </MudText>
-
-                                <MudButton Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Refresh" OnClick="TentarNovamente">
-                                    Tentar novamente
-                                </MudButton>
-                            </MudPaper>
-                        </ErrorContent>
-                    </CustomErrorBoundary>
+                                    <MudButton Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Refresh" OnClick="TentarNovamente">
+                                        Tentar novamente
+                                    </MudButton>
+                                </MudPaper>
+                            </ErrorContent>
+                        </CustomErrorBoundary>
+                    </CascadingValue>
                 </CascadingValue>
             </MudContainer>
         </MudMainContent>
@@ -95,6 +105,7 @@
 @code {
     private bool drawerOpen = true;
     private bool isDarkMode = true;
+    private UserSessionInfo? sessionInfo = null;
     // Referência ao seu componente customizado
     private CustomErrorBoundary? meuBoundary;
 
@@ -135,7 +146,25 @@
 
     protected override void OnInitialized()
     {
+        //==============================================================================================
+        // Assina eventos para manter o layout sincronizado com loading e autenticação.
+        //==============================================================================================
         loadingState.OnChange += HandleLoadingStateChanged;
+        authenticationStateProvider.AuthenticationStateChanged += OnAuthStateChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        //==============================================================================================
+        // Carrega informações da sessão a partir do cookie/claims.
+        //==============================================================================================
+        await RefreshSessionInfoAsync();
+
+        if (sessionInfo != null)
+        {
+            // Aplica o tema inicial
+            isDarkMode = sessionInfo.PreferredTheme == ThemeOptions.Dark;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -149,6 +178,7 @@
     public void Dispose()
     {
         loadingState.OnChange -= HandleLoadingStateChanged;
+        authenticationStateProvider.AuthenticationStateChanged -= OnAuthStateChanged;
     }
 
     private void HandleLoadingStateChanged()
@@ -159,6 +189,55 @@
     private void DrawerToggle()
     {
         drawerOpen = !drawerOpen;
+    }
+
+    private async void OnAuthStateChanged(Task<AuthenticationState> task)
+    {
+        await RefreshSessionInfoAsync();
+        StateHasChanged();
+    }
+
+    private async Task RefreshSessionInfoAsync()
+    {
+        //------------------------------------------------------------------------------------------
+        // Lê o usuário autenticado e popula o objeto de sessão.
+        //------------------------------------------------------------------------------------------
+        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+        sessionInfo = authenticationService.GetSessionInfo(authState.User);
+
+        if (sessionInfo == null)
+            navigationManager.NavigateTo("/", true);
+    }
+
+    private async Task HandleLogout()
+    {
+        try
+        {
+            loadingState.Show("Saindo...");
+
+            //======================================================================================
+            // Logout via endpoint HTTP, garantindo que o cookie seja removido no navegador.
+            //======================================================================================
+            var logoutUri = new Uri(new Uri(navigationManager.BaseUri), "auth/logout");
+            var ok = await JS.InvokeAsync<bool>("authLogout", logoutUri.ToString());
+
+            if (!ok)
+            {
+                snackbar.Add("Não foi possível encerrar a sessão.", Severity.Error);
+                return;
+            }
+
+            navigationManager.NavigateTo("/", true);
+        }
+        catch (Exception)
+        {
+            snackbar.Add("Não foi possível encerrar a sessão.", Severity.Error);
+            throw;
+        }
+        finally
+        {
+            loadingState.Hide();
+        }
     }
 
     private async Task ToggleDarkMode()

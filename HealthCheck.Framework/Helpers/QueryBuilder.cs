@@ -4,11 +4,19 @@ namespace HealthCheck.Framework.Helpers;
 
 public class QueryBuilder
 {
-    public static string BuildInsertQuery<T>(T entity, List<string> ignoreThisAttr, string tableName)
+    public static string BuildInsertQuery<T>(T entity,
+                                             List<string> ignoreThisAttr,
+                                             string tableName,
+                                             bool returnResult = false)
     {
         Dictionary<string, string> columnsAndValues = GetColumnsAndValues(entity, ignoreThisAttr);
 
-        return $"INSERT INTO {tableName} ({string.Join(", ", columnsAndValues.Keys)}) VALUES ({string.Join(", ", columnsAndValues.Values)})";
+        string sql = $"INSERT INTO {tableName} ({string.Join(", ", columnsAndValues.Keys)}) VALUES ({string.Join(", ", columnsAndValues.Values)})";
+
+        if (returnResult)
+            sql += " RETURNING *";
+
+        return sql;
     }
 
     public static string BuildUpdateQuery<T>(T entity, List<string> ignoreThisAttr, string tableName, string whereClause)

@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HealthCheck.Domain\HealthCheck.Framework.csproj" />
+    <ProjectReference Include="..\HealthCheck.Framework\HealthCheck.Framework.csproj" />
   </ItemGroup>
 
 </Project>

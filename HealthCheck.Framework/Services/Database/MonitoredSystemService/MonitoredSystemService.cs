@@ -2,8 +2,9 @@
 using HealthCheck.Framework.Helpers;
 using HealthCheck.Framework.Models;
 using HealthCheck.Framework.Repositories.MonitoredSystemRepository;
+using HealthCheck.Framework.Services.Database.MonitoredSystemService.Filters;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService.Validators;
-using HealthCheck.Framework.Services.Filters;
+using HealthCheck.Framework.Services.Database.Resources;
 using System.Net;
 
 namespace HealthCheck.Framework.Services.Database.MonitoredSystemService;
@@ -59,7 +60,9 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
         return Result<IList<MonitoredSystem>>.AsSuccess(monitoredSystems);
     }
 
-    public async Task<Result<object>> UpdateMonitoredSystem(MonitoredSystem monitoredSystem)
+    public async Task<Result<object>> UpdateMonitoredSystem(MonitoredSystem monitoredSystem,
+                                                            MonitoredSystem monitoredSystemClone,
+                                                            string changeBy = "System")
     {
         NormalizeMonitoredSystem(monitoredSystem);
 
@@ -70,17 +73,44 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
         if (!validationResult.IsValid)
             return Result<object>.AsFailure(new Failure(HttpStatusCode.BadRequest, validationResult));
 
+        monitoredSystem.UpdatedAt = DateTime.Now;
+
+        List<string> ignoreAttributes = [nameof(MonitoredSystem.UpdatedAt),
+                                         nameof(MonitoredSystem.Id),
+                                         nameof(MonitoredSystem.UserId),
+                                         nameof(MonitoredSystem.History)];
+
+        //===========================================================================================================
+        // Compara as diferenças entre o objeto original e o objeto atualizado, para obter uma descrição das mudanças
+        // realizadas, e assim, gerar um histórico de mudanças mais detalhado e informativo para o usuário, indicando
+        // quais campos foram alterados, para obter um melhor controle e rastreabilidade das modificações feitas no
+        // sistema monitorado
+        //===========================================================================================================
+        string differences = ServicesResources.CompareObjects(monitoredSystem, monitoredSystemClone, ignoreAttributes);
+
+        //===========================================================================================================
+        // Se houver diferenças, adiciona uma entrada ao histórico do sistema monitorado,
+        // indicando as mudanças realizadas
+        //===========================================================================================================
+        if (!string.IsNullOrWhiteSpace(differences))
+        {
+            differences += $"\n * Alterado por último em: {monitoredSystem.UpdatedAt:yyyy-MM-dd HH:mm:ss} por {changeBy} *";
+
+            monitoredSystem.History += $"{differences}\n";
+        }
+
         await monitoredSystemRepository.Update(monitoredSystem);
 
         return Result<object>.AsSuccess(new { });
     }
-    public async Task<Result<object>> DeleteMonitoredSystem(Guid id)
+    public async Task<Result<object>> DeleteMonitoredSystem(Guid id, Guid userId)
     {
         var monitoredSystem = await monitoredSystemRepository.GetById(id);
 
-        // TODO: Futuramente, irei validar se quem está tentando deletar o sistema monitorado é o dono do mesmo,
-        // ou seja, se ele tem permissão para deletar o sistema monitorado
-        if (monitoredSystem == null)
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        // Caso não encontre o sistema monitorado ou o sistema monitorado não pertenca ao usuário
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        if (monitoredSystem == null || monitoredSystem.UserId != userId)
             return Result<object>.AsFailure(new(HttpStatusCode.BadRequest, BuildValidationResult("Recurso não encontrado")));
 
         await monitoredSystemRepository.Delete(monitoredSystem);

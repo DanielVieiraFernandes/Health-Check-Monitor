@@ -1,5 +1,6 @@
 @page "/sistemas"
-@using HealthCheck.Framework.Services.Filters
+@attribute [Authorize]
+@using HealthCheck.Framework.Services.Database.MonitoredSystemService.Filters
 @inject LoadingState loadingState
 @implements IDisposable
 
@@ -27,6 +28,7 @@
         <MudStack Spacing="3">
             <MudStack Row="true" Class="search-row" Spacing="2" AlignItems="AlignItems.Center">
                 <MudTextField @bind-Value="searchFiltersMonitoredSystems.SearchTerm"
+                              @onkeydown="OnKeyDownEnter"
                               Placeholder="Pesquisar por nome, URL ou descrição"
                               Variant="Variant.Outlined"
                               Adornment="Adornment.Start"
@@ -208,6 +210,13 @@
         loadingState.Show("Carregando sistemas monitorados...");
         await LoadMonitoredSystemsData();
         loadingState.Hide();    
+    }
+
+    private async Task OnKeyDownEnter(KeyboardEventArgs args)
+    {
+        loadingState.Show("Carregando sistemas monitorados...");
+        await LoadMonitoredSystemsData();
+        loadingState.Hide();
     }
 
     private static Color GetStatusColor(HealthStatus status)

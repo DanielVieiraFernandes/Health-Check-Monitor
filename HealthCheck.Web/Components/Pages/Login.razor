@@ -1,0 +1,272 @@
+@page "/"
+@layout Layout.AuthLayout
+@attribute [AllowAnonymous]
+@using System.Net.Mail
+@using System.Text.RegularExpressions
+@using HealthCheck.Framework.Utils
+@inject AuthenticationService authenticationService
+@inject AuthenticationStateProvider authenticationStateProvider
+@inject LoadingState loadingState
+@inject HttpClient httpClient
+
+<PageTitle>Login</PageTitle>
+
+<div class="login-page">
+    <MudGrid Justify="Justify.Center">
+        <MudItem xs="12" sm="10" md="6" lg="5" xl="4">
+            <MudPaper Class="login-card pa-6" Elevation="2">
+                <MudStack Spacing="3">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.h4" Class="font-weight-bold">Entrar</MudText>
+                        <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Acesse o painel de monitoramento</MudText>
+                    </MudStack>
+
+                    <MudTextField @bind-Value="email"
+                                  @key="@($"email-{validationVersion}")"
+                                  Label="Email"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Email"
+                                  Immediate="true"
+                                  Disabled="loadingState.IsLoading"
+                                  Error="@HasError(EmailField)"
+                                  ErrorText="@GetError(EmailField)"
+                                  OnInput="HandleEmailInput"
+                                  OnBlur="ValidateEmail"
+                                  OnKeyDown="HandleEnter" />
+
+                    <MudTextField @bind-Value="password"
+                                  @key="@($"password-{validationVersion}")"
+                                  Label="Senha"
+                                  InputType="InputType.Password"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Lock"
+                                  Immediate="true"
+                                  Disabled="loadingState.IsLoading"
+                                  Error="@HasError(PasswordField)"
+                                  ErrorText="@GetError(PasswordField)"
+                                  OnInput="HandlePasswordInput"
+                                  OnBlur="ValidatePassword"
+                                  OnKeyDown="HandleEnter" />
+
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudCheckBox @bind-Value="rememberMe" Color="Color.Primary" Label="Lembrar-me" Disabled="loadingState.IsLoading" />
+                        <SfTooltip Content="Recuperar acesso" Position="Syncfusion.Blazor.Popups.Position.BottomCenter">
+                            <MudLink Href="javascript:void(0)" Typo="Typo.body2" Color="Color.Info">Esqueceu a senha?</MudLink>
+                        </SfTooltip>
+                    </MudStack>
+
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Large"
+                               FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.Login"
+                               Disabled="loadingState.IsLoading"
+                               OnClick="HandleLogin">
+                        Entrar
+                    </MudButton>
+
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                            @errorMessage
+                        </MudAlert>
+                    }
+
+                    <MudDivider />
+
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Align="Align.Center">
+                        Ainda não possui acesso? Solicite ao administrador.
+                    </MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</div>
+
+@code {
+    private string? email;
+    private string? password;
+    private bool rememberMe = true;
+    private string? errorMessage;
+    private readonly Dictionary<string, string> fieldErrors = [];
+    private const string EmailField = "Email";
+    private const string PasswordField = "Password";
+    private int validationVersion;
+
+    protected override async Task OnInitializedAsync()
+    {
+        //==============================================================================================
+        // Se o usuário já estiver autenticado, redireciona para a home sem mostrar a tela de login.
+        //==============================================================================================
+        loadingState.OnChange += LoadingStateChanged;
+
+        loadingState.Show("");
+
+        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+
+        if (authState.User.Identity?.IsAuthenticated == true)
+            navigationManager.NavigateTo("/home", true);
+
+        loadingState.Hide();
+    }
+
+    private async Task HandleLogin()
+    {
+        try
+        {
+            loadingState.Show();
+            errorMessage = null;
+            ResetFieldErrors();
+
+            if (!ValidateFields())
+                return;
+
+            loadingState.SetMessage("Autenticando...");
+
+            var loginUri = new Uri(new Uri(navigationManager.BaseUri), "auth/login");
+
+            //==========================================================================================
+            // A chamada via JavaScript roda no browser, garantindo que o Set-Cookie seja persistido
+            // pelo cliente (e não apenas no servidor).
+            //==========================================================================================
+            var isAuthenticated = await JS.InvokeAsync<bool>("authLogin", loginUri.ToString(),
+                new LoginRequest(email ?? string.Empty, password ?? string.Empty, "dark"));
+
+            if (!isAuthenticated)
+            {
+                errorMessage = "Credenciais inválidas";
+                snackbar.Add("Credenciais inválidas...", Severity.Error);
+                return;
+            }
+
+            navigationManager.NavigateTo("/home", true);
+        }
+        catch (Exception ex)
+        {
+            RecordLog.RecordExceptionLog(ex);
+            snackbar.Add("Ocorreu um erro durante o login. Tente novamente.", Severity.Error);
+            navigationManager.Refresh(true);
+        } 
+        finally
+        {
+            loadingState.Hide();    
+        }
+
+    }
+
+    private async Task HandleEnter(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+            await HandleLogin();
+    }
+
+    private void ValidateEmail(FocusEventArgs _)
+    {
+        ApplyEmailValidation();
+    }
+
+    private void HandleEmailInput(ChangeEventArgs _)
+    {
+        ValidateEmail(default);
+    }
+
+    private void ValidatePassword(FocusEventArgs _)
+    {
+        ApplyPasswordValidation();
+    }
+
+    private void HandlePasswordInput(ChangeEventArgs _)
+    {
+        ValidatePassword(default);
+    }
+
+    private bool ValidateFields()
+    {
+        var isValid = true;
+
+        //==========================================================================================
+        // Regras mínimas de validação para login.
+        //==========================================================================================
+        if (!ApplyEmailValidation())
+            isValid = false;
+
+        if (!ApplyPasswordValidation())
+            isValid = false;
+
+        if(!isValid)
+            snackbar.Add("Dados inválidos!", Severity.Warning);
+
+        return isValid;
+    }
+
+    private bool ApplyEmailValidation()
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            fieldErrors[EmailField] = "Informe o email.";
+            validationVersion++;
+            return false;
+        }
+
+        if (!IsValidEmail(email))
+        {
+            fieldErrors[EmailField] = "Informe um email válido.";
+            validationVersion++;
+            return false;
+        }
+
+        if (fieldErrors.Remove(EmailField))
+            validationVersion++;
+
+        return true;
+    }
+
+    private bool ApplyPasswordValidation()
+    {
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            fieldErrors[PasswordField] = "Informe a senha.";
+            validationVersion++;
+            return false;
+        }
+
+        if (password.Length < 6)
+        {
+            fieldErrors[PasswordField] = "A senha deve ter pelo menos 6 caracteres.";
+            validationVersion++;
+            return false;
+        }
+
+        if (fieldErrors.Remove(PasswordField))
+            validationVersion++;
+
+        return true;
+    }
+
+    private static bool IsValidEmail(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        const string pattern = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$";
+        return Regex.IsMatch(value, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    }
+
+    private bool HasError(string fieldName) => fieldErrors.ContainsKey(fieldName);
+
+    private string? GetError(string fieldName)
+        => fieldErrors.TryGetValue(fieldName, out var error) ? error : null;
+
+    private void ResetFieldErrors()
+    {
+        fieldErrors.Clear();
+        validationVersion++;
+    }
+
+    private void LoadingStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+}

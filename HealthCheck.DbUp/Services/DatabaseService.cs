@@ -22,16 +22,18 @@ public class DatabaseService
 
             StringBuilder sql = new();
 
-            sql.Append("DROP TABLE IF EXISTS monitored_systems; ");
+            sql.Append("DROP TABLE IF EXISTS monitored_systems CASCADE;");
             sql.Append("CREATE TABLE monitored_systems ( ");
             sql.Append("id UUID PRIMARY KEY DEFAULT uuidv7(), ");
+            sql.Append("user_id UUID REFERENCES users(id), ");
             sql.Append("name VARCHAR(255) NOT NULL, ");
             sql.Append("description TEXT NOT NULL DEFAULT '', ");
             sql.Append("url TEXT NOT NULL, ");
             sql.Append("interval_in_minutes INT NOT NULL, ");
             sql.Append("last_status INT NOT NULL DEFAULT 1, ");
             sql.Append("last_checked_at TIMESTAMP WITHOUT TIME ZONE, ");
-            sql.Append("created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()");
+            sql.Append("created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),");
+            sql.Append("updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()");
             sql.Append("); ");
 
             await _connection.ExecuteAsync(sql.ToString());
@@ -48,8 +50,42 @@ public class DatabaseService
         }
     }
 
+    public async Task CreateUsersTable()
+    {
+        try
+        {
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine("Criando tabela de usuários... ");
+
+            StringBuilder sql = new();
+
+            sql.Append("DROP TABLE IF EXISTS users CASCADE; ");
+            sql.Append("CREATE TABLE users ( ");
+            sql.Append("id UUID PRIMARY KEY DEFAULT uuidv7(), ");
+            sql.Append("name VARCHAR(255) NOT NULL, ");
+            sql.Append("email VARCHAR(255) NOT NULL, ");
+            sql.Append("password VARCHAR(255) NOT NULL, ");
+            sql.Append("history TEXT NOT NULL DEFAULT '', ");
+            sql.Append("created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(), ");
+            sql.Append("updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()");
+            sql.Append("); ");
+
+            await _connection.ExecuteAsync(sql.ToString());
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Tabela de usuários criada com sucesso! ");
+            Console.WriteLine();
+            Console.ResetColor();
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Erro ao criar tabela de usuários no sistema: {ex.Message} ");
+        }
+    }
     public async Task CreateTables()
     {
+        await CreateUsersTable();
         await CreateMonitoredSystemTable();
     }
 }

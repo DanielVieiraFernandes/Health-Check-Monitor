@@ -1,0 +1,52 @@
+.login-page {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+}
+
+.login-card {
+    border-radius: 22px;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    background: linear-gradient(140deg, rgba(255, 255, 255, 0.96), rgba(224, 231, 255, 0.86));
+    box-shadow: 0 20px 40px rgba(99, 102, 241, 0.12);
+}
+
+.login-page ::deep .mud-input-control {
+    border-radius: 14px;
+}
+
+.login-page ::deep .mud-input-control .mud-input-outlined-border {
+    border-color: rgba(99, 102, 241, 0.32);
+}
+
+.login-page ::deep .mud-input-control:hover .mud-input-outlined-border {
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+.login-page ::deep .mud-input-control.mud-input-focused .mud-input-outlined-border {
+    border-color: rgba(99, 102, 241, 0.7);
+}
+
+:global(.theme-dark) .login-card,
+:global(.mud-theme-dark) .login-card {
+    border-color: rgba(129, 140, 248, 0.4);
+    background: linear-gradient(140deg, rgba(30, 41, 59, 0.88), rgba(49, 46, 129, 0.6));
+    box-shadow: 0 20px 40px rgba(30, 27, 75, 0.35);
+}
+
+:global(.theme-dark) .login-page ::deep .mud-input-control .mud-input-outlined-border,
+:global(.mud-theme-dark) .login-page ::deep .mud-input-control .mud-input-outlined-border {
+    border-color: rgba(129, 140, 248, 0.42);
+}
+
+:global(.theme-dark) .login-page ::deep .mud-input-control:hover .mud-input-outlined-border,
+:global(.mud-theme-dark) .login-page ::deep .mud-input-control:hover .mud-input-outlined-border {
+    border-color: rgba(165, 180, 252, 0.72);
+}
+
+:global(.theme-dark) .login-page ::deep .mud-input-control.mud-input-focused .mud-input-outlined-border,
+:global(.mud-theme-dark) .login-page ::deep .mud-input-control.mud-input-focused .mud-input-outlined-border {
+    border-color: rgba(199, 210, 254, 0.86);
+}
