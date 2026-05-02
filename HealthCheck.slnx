@@ -1,5 +1,5 @@
 <Solution>
   <Project Path="HealthCheck.DbUp/HealthCheck.DbUp.csproj" Id="e745c42f-e3e8-449f-ad0a-43122d5082f7" />
-  <Project Path="HealthCheck.Domain/HealthCheck.Framework.csproj" />
+  <Project Path="HealthCheck.Framework/HealthCheck.Framework.csproj" />
   <Project Path="HealthCheck.Web/HealthCheck.Web.csproj" />
 </Solution>

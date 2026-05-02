@@ -1,0 +1,46 @@
+<MudDialog Class="confirm-delete-dialog">
+    <DialogContent>
+        <MudStack Spacing="2" Class="confirm-delete-content pa-1">
+            <MudText Typo="Typo.h6" Class="font-weight-bold">Tem certeza que deseja excluir este sistema monitorado?</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Essa ação não pode ser desfeita.</MudText>
+
+            <MudPaper Class="confirm-delete-details pa-3" Elevation="0">
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Nome</MudText>
+                    <MudText Typo="Typo.body1">@GetName()</MudText>
+
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">URL</MudText>
+                    <MudText Typo="Typo.body2" Class="confirm-delete-url">@GetUrl()</MudText>
+
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Criado em</MudText>
+                    <MudText Typo="Typo.body2">@FormatDateTime(CreatedAt)</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Confirm">Confirmar exclusão</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string Name { get; set; } = string.Empty;
+    [Parameter] public string Url { get; set; } = string.Empty;
+    [Parameter] public DateTime CreatedAt { get; set; }
+
+    private void Cancel() => MudDialog.Cancel();
+    private void Confirm() => MudDialog.Close(DialogResult.Ok(true));
+
+    private string GetName()
+        => string.IsNullOrWhiteSpace(Name) ? "Não informado" : Name;
+
+    private string GetUrl()
+        => string.IsNullOrWhiteSpace(Url) ? "Não informado" : Url;
+
+    private static string FormatDateTime(DateTime value)
+        => value <= DateTime.MinValue.AddDays(1) ? "Não informado" : value.ToString("dd/MM/yyyy HH:mm");
+}

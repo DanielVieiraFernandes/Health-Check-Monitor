@@ -22,12 +22,17 @@ public sealed class LoadingState
         if (activeOperations > 0)
             activeOperations--;
 
-        if (activeOperations == 0)
-        {
-            IsLoading = false;
-            Message = "Carregando...";
-        }
+        IsLoading = activeOperations > 0;
 
+        if (!IsLoading)
+            Message = "Carregando...";
+
+        OnChange?.Invoke();
+    }
+
+    public void SetMessage(string message)
+    {
+        Message = message;
         OnChange?.Invoke();
     }
 }

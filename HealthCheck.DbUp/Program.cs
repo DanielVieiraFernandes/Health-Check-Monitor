@@ -11,4 +11,4 @@ Console.ForegroundColor = ConsoleColor.Blue;
 Console.WriteLine("Criando tabelas no banco de dados...");
 Console.WriteLine();
 Console.ResetColor();
-await databaseService.CreateMonitoredSystemTable();
+await databaseService.CreateTables();

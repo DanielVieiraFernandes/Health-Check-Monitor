@@ -6,7 +6,9 @@
           ShowCloseIcon="true"
           @bind-Visible="Visible"
           CloseOnEscape="true"
-          CssClass="monitored-system-sync-dialog"
+          Target=".layout-root"
+          CssClass="@DialogCssClass"
+          ZIndex="1100"
           AllowDragging="false">
     <DialogTemplates>
         <Header>
@@ -24,6 +26,7 @@
                             <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Dados do sistema</MudText>
 
                             <MudTextField @bind-Value="monitoredSystem.Name"
+                                          @key="@($"name-{validationVersion}")"
                                           Label="Nome do sistema"
                                           Variant="Variant.Outlined"
                                           Placeholder="Ex.: API de Faturamento"
@@ -34,6 +37,7 @@
                                           ErrorText="@GetError(nameof(MonitoredSystem.Name))" />
 
                             <MudTextField @bind-Value="monitoredSystem.Url"
+                                          @key="@($"url-{validationVersion}")"
                                           Label="URL"
                                           Variant="Variant.Outlined"
                                           Placeholder="https://minha-api.com/health"
@@ -44,6 +48,7 @@
                                           ErrorText="@GetError(nameof(MonitoredSystem.Url))" />
 
                             <MudNumericField T="int"
+                                             @key="@($"interval-{validationVersion}")"
                                              @bind-Value="monitoredSystem.IntervalInMinutes"
                                              Label="Intervalo de verificação (minutos)"
                                              Variant="Variant.Outlined"
@@ -68,10 +73,16 @@
                             <MudDivider />
 
                             <MudText Typo="Typo.caption" Color="Color.Secondary">Nome</MudText>
-                            <MudText Typo="Typo.body1">@GetPreviewName()</MudText>
+                            <MudText Typo="Typo.body1" Class="preview-name" Title="@GetPreviewName()">@GetPreviewName()</MudText>
 
                             <MudText Typo="Typo.caption" Color="Color.Secondary">URL</MudText>
-                            <MudText Typo="Typo.body2" Class="preview-url">@GetPreviewUrl()</MudText>
+                            <MudText Typo="Typo.body2" Class="preview-url" Title="@GetPreviewUrl()">@GetPreviewUrl()</MudText>
+
+                            @if (!IsCreateMode)
+                            {
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Criado em</MudText>
+                                <MudText Typo="Typo.body2">@FormatDateTime(monitoredSystem.CreatedAt)</MudText>
+                            }
                         </MudStack>
                     </MudPaper>
                 </MudItem>
@@ -80,68 +91,117 @@
     </DialogTemplates>
 
     <DialogButtons>
-        <DialogButton Content="Cancelar" IsPrimary="false" CssClass="e-flat" OnClick="OnCancelClick"></DialogButton>
-        <DialogButton Content="@SaveButtonText" IsPrimary="true" CssClass="e-primary" OnClick="OnSaveClick"></DialogButton>
+        @if (!IsCreateMode)
+        {
+            <DialogButton Content="Excluir" IsPrimary="false" CssClass="e-danger delete-footer-button" Disabled="loadingState.IsLoading" OnClick="OnDeleteClick"></DialogButton>
+        }
+        <DialogButton Content="Cancelar" IsPrimary="false" CssClass="e-flat" Disabled="loadingState.IsLoading" OnClick="async Task() => await SetVisible(false)"></DialogButton>
+        <DialogButton Content="@SaveButtonText" IsPrimary="true" CssClass="e-primary" Disabled="loadingState.IsLoading" OnClick="SaveData"></DialogButton>
     </DialogButtons>
 
-    <DialogEvents OnClose="OnDialogClose"/>
+    <DialogEvents OnClose="async Task() => await SetVisible(false)" />
 </SfDialog>
 
 @code {
+    [CascadingParameter(Name = "IsDarkMode")]
+    public bool IsDarkMode { get; set; }
+
     [Parameter]
     public bool IsCreateMode { get; set; }
+
+    //********************************************************************************************************************************
+    // Quando usamos o @bind-Visible, o Blazor espera que tenhamos tanto a propriedade Visible
+    // quanto o EventCallback VisibleChanged para funcionar corretamente, pois, internamente, o @bind-Visible
+    // é apenas uma sintaxe açucarada para vincular a propriedade Visible e o evento VisibleChanged.
+    // Quando chamamos SetVisible(false) dentro do método SaveData ou OnDeleteClick, estamos atualizando a propriedade Visible,
+    // o que, por sua vez, aciona o EventCallback VisibleChanged para notificar o componente pai sobre a mudança de estado.
+    //********************************************************************************************************************************
 
     [Parameter] 
     public bool Visible { get; set; }
 
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+
     [Parameter] 
     public Guid? MonitoredSystemId { get; set; }
 
-    [Parameter] public EventCallback OnSaved { get; set; }
+    [Parameter] 
+    public EventCallback OnSaved { get; set; }
 
     private readonly Dictionary<string, string> fieldErrors = [];
-    private readonly CreateMonitoredSystemValidator validator = new();
 
     private MonitoredSystem monitoredSystem { get; set; } = new();
-    private MonitoredSystem originalMonitoredSystem { get; set; }
+    private MonitoredSystem originalMonitoredSystem { get; set; } = new();
+    private int validationVersion;
 
     private string SaveButtonText => IsCreateMode ? "Registrar sistema" : "Salvar alterações";
+    private string DialogCssClass => IsDarkMode ? "monitored-system-sync-dialog monitored-system-sync-dialog-dark" : "monitored-system-sync-dialog";
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        //************************************************************
-        // CASO ESTEJA EM INCLUSÃO
-        //************************************************************
+        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        // Garante que os métodos abaixo sejam chamados somente quando o componente estiver visível
+        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        if (!Visible)
+            return;
+
+        ResetFieldErrors();
+
+        // CASO ESTEJA EM MODO DE INCLUSÃO
         if (IsCreateMode)
         {
-            fieldErrors.Clear();
+            InitializeDialogData();
             return;
         }
 
-        //************************************************************
-        // CASO ESTEJA EM EDIÇÃO
-        //************************************************************
         await LoadMonitoredSystemData(MonitoredSystemId!.Value);
     }
-    private async Task OnCancelClick(object _)
+
+    private void InitializeDialogData()
     {
-        await CloseDialog();
+        monitoredSystem = new();
+        originalMonitoredSystem = monitoredSystem.Clone();
     }
 
-    private async Task OnSaveClick(object _)
+    private async Task OnDeleteClick(object _)
     {
-        await SaveData();
-    }
+        if (IsCreateMode || loadingState.IsLoading)
+            return;
 
-    private async Task OnDialogClose()
-    {
-        Visible = false;
+        var idToDelete = monitoredSystem.Id != Guid.Empty ? monitoredSystem.Id : MonitoredSystemId;
+
+        if (idToDelete is null || idToDelete == Guid.Empty)
+        {
+            snackbar.Add("Não foi possível identificar o sistema monitorado para exclusão.", Severity.Error);
+            return;
+        }
+
+        var parameters = new DialogParameters
+        {
+            [nameof(ConfirmDeleteMonitoredSystemDialog.Name)] = monitoredSystem.Name,
+            [nameof(ConfirmDeleteMonitoredSystemDialog.Url)] = monitoredSystem.Url,
+            [nameof(ConfirmDeleteMonitoredSystemDialog.CreatedAt)] = monitoredSystem.CreatedAt
+        };
+
+        var options = new MudBlazor.DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDeleteMonitoredSystemDialog>("Confirmar exclusão", parameters, options);
+        var result = await dialog.Result;
+
+        if (result!.Canceled)
+            return;
+
+        await DeleteData(idToDelete.Value);
     }
 
     private async Task SaveData()
     {
-        fieldErrors.Clear();
-
         try
         {
             loadingState.Show(IsCreateMode ? "Registrando sistema monitorado..." : "Salvando alterações do sistema monitorado...");
@@ -152,6 +212,15 @@
 
                 if (result.IsFailure)
                 {
+
+                    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    // Caso tenha ocorrido um erro de validação, exibir mensagens específicas para cada campo
+                    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    if(result.Failure!.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                    {
+                        ApplyFieldErrors(result.Failure);
+                    }
+
                     await ShowFailureDialog("Falha ao registrar sistema", result.Failure);
                     return;
                 }
@@ -160,16 +229,29 @@
             }
             else
             {
-                await monitoredSystemService.UpdateMonitoredSystem(monitoredSystem);
+                var result = await monitoredSystemService.UpdateMonitoredSystem(monitoredSystem, originalMonitoredSystem, "user");
+
+                if (result.IsFailure)
+                {
+                    if(result.Failure!.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                    {
+                        ApplyFieldErrors(result.Failure);
+                    }
+
+                    await ShowFailureDialog("Falha ao atualizar sistema", result.Failure);
+                    return;
+                }
+
                 snackbar.Add("Sistema monitorado atualizado com sucesso.", Severity.Success);
-            }
+            }   
 
             await OnSaved.InvokeAsync();
-            await CloseDialog();
+            await SetVisible(false);
         }
         catch (Exception)
         {
             snackbar.Add("Não foi possível salvar os dados do sistema monitorado.", Severity.Error);
+            throw;
         }
         finally
         {
@@ -188,7 +270,7 @@
             if (result.IsFailure)
             {
                 await ShowFailureDialog("Falha ao buscar dados do sistema monitorado", result.Failure);
-                await CloseDialog();
+                await SetVisible(false);
                 return;
             }
 
@@ -198,7 +280,11 @@
         catch (Exception)
         {
             snackbar.Add("Não foi possível carregar os dados do sistema monitorado.", Severity.Error);
-            await CloseDialog();
+            await SetVisible(false);
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            // Lançar a exceção para que o CustomErrorBoundary possa capturá-la e registrar o log detalhado do erro
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            throw;
         }
         finally
         {
@@ -211,23 +297,56 @@
         var parameters = new DialogParameters
         {
             [nameof(ErrorReportDialog.Title)] = title,
-            [nameof(ErrorReportDialog.StatusCode)] = failure?.StatusCode,
             [nameof(ErrorReportDialog.Errors)] = failure?.Errors.Select(error => error.ErrorMessage).ToList() ?? []
         };
 
         var options = new MudBlazor.DialogOptions
         {
             CloseOnEscapeKey = true,
-            MaxWidth = MaxWidth.Medium,
-            FullWidth = true
+            MaxWidth = MaxWidth.Small,
+            FullWidth = false
         };
 
-        await DialogService.ShowAsync<ErrorReportDialog>("Falha na operação", parameters, options);
+        await DialogService.ShowAsync<ErrorReportDialog>("", parameters, options);
     }
 
-    private async Task CloseDialog()
+    private async Task DeleteData(Guid idToDelete)
     {
-        Visible = false;
+        try
+        {
+            loadingState.Show("Excluindo sistema monitorado...");
+
+            var result = await monitoredSystemService.DeleteMonitoredSystem(idToDelete, Guid.NewGuid());
+
+            if (result.IsFailure)
+            {
+                await ShowFailureDialog("Falha ao excluir sistema", result.Failure);
+                return;
+            }
+
+            snackbar.Add("Sistema monitorado excluído com sucesso.", Severity.Success);
+            await OnSaved.InvokeAsync();
+            await SetVisible(false);
+        }
+        catch (Exception)
+        {
+            snackbar.Add("Não foi possível excluir o sistema monitorado.", Severity.Error);
+            throw;
+        }
+        finally
+        {
+            loadingState.Hide();
+        }
+    }
+
+    private async Task SetVisible(bool visible)
+    {
+        if (Visible == visible)
+            return;
+
+        ResetFieldErrors();
+        Visible = visible;
+        await VisibleChanged.InvokeAsync(visible);
     }
 
     private bool HasError(string fieldName) => fieldErrors.ContainsKey(fieldName);
@@ -240,5 +359,36 @@
 
     private string GetPreviewUrl()
         => string.IsNullOrWhiteSpace(monitoredSystem.Url) ? "https://seu-endpoint.com/health" : monitoredSystem.Url;
+
+    private static string FormatDateTime(DateTime value)
+        => value <= DateTime.MinValue.AddDays(1) ? "Não informado" : value.ToString("dd/MM/yyyy HH:mm");
+
+    private void ResetFieldErrors()
+    {
+        fieldErrors.Clear();
+        validationVersion++;
+    }
+
+    private void ApplyFieldErrors(Failure? failure)
+    {
+        if (failure is null)
+            return;
+
+        var groupedErrors = failure.Errors
+            .Where(error => !string.IsNullOrWhiteSpace(error.PropertyName))
+            .GroupBy(error => NormalizePropertyName(error.PropertyName))
+            .ToDictionary(
+                group => group.Key,
+                group => string.Join(" - ", group.Select(item => item.ErrorMessage).Distinct())
+            );
+
+        foreach (var kvp in groupedErrors)
+            fieldErrors[kvp.Key] = kvp.Value;
+
+        validationVersion++;
+    }
+
+    private static string NormalizePropertyName(string propertyName)
+        => propertyName.Contains('.') ? propertyName.Split('.').Last() : propertyName;
 
 }

@@ -1,78 +1,70 @@
-.page {
+.layout-root {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.12), transparent 40%),
+        radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.14), transparent 35%),
+        #f3f6ff;
+}
+
+.layout-root ::deep .hc-layout {
+    background: transparent;
+}
+
+.layout-root ::deep .hc-appbar {
+    backdrop-filter: blur(10px);
+    background: rgba(22, 28, 45, 0.78) !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.layout-root ::deep .hc-brand-avatar {
+    background: linear-gradient(145deg, rgba(99, 102, 241, 0.8), rgba(14, 165, 233, 0.75));
+    color: white;
+}
+
+.layout-root ::deep .hc-brand-title {
+    background: -webkit-linear-gradient(45deg, #6366F1, #0EA5E9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.hc-brand-subtitle {
+    color: rgba(226, 232, 240, 0.86);
+}
+
+.layout-root ::deep .hc-drawer {
+    border-right: 1px solid rgba(99, 102, 241, 0.2);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(238, 242, 255, 0.84)) !important;
+}
+
+.layout-root ::deep .hc-nav-menu .mud-nav-link {
+    margin: 6px 10px;
+    border-radius: 12px;
+    transition: background .2s ease, transform .2s ease;
+}
+
+.layout-root ::deep .hc-nav-menu .mud-nav-link:hover {
+    transform: translateX(3px);
+    background: rgba(99, 102, 241, 0.14);
+}
+
+.layout-root ::deep .hc-main-content {
+    background: transparent;
+}
+
+.hc-content-wrapper {
     position: relative;
-    display: flex;
-    flex-direction: column;
 }
 
-main {
-    flex: 1;
+.error-boundary-card {
+    border-radius: 18px;
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    background: linear-gradient(145deg, rgba(255, 241, 242, 0.95), rgba(255, 228, 230, 0.88));
+    box-shadow: 0 18px 38px rgba(244, 63, 94, 0.16);
 }
 
-.sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
-}
-
-.top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
-    height: 3.5rem;
-    display: flex;
-    align-items: center;
-}
-
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-    }
-
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-    }
-
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-@media (max-width: 640.98px) {
-    .top-row {
-        justify-content: space-between;
-    }
-
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
-    }
-}
-
-@media (min-width: 641px) {
-    .page {
-        flex-direction: row;
-    }
-
-    .sidebar {
-        width: 250px;
-        height: 100vh;
-        position: sticky;
-        top: 0;
-    }
-
-    .top-row {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-    }
-
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
-    }
-
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
+@media (max-width: 780px) {
+    .hc-brand-subtitle {
+        display: none;
     }
 }
 
@@ -104,11 +96,38 @@ main {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(2, 6, 23, 0.42);
-    backdrop-filter: blur(2px);
+    background: rgba(15, 23, 42, 0.36);
+    backdrop-filter: blur(6px);
     pointer-events: all;
 }
 
-:global(.mud-theme-dark) .global-loading-overlay {
-    background: rgba(2, 6, 23, 0.58);
+.layout-root.theme-dark {
+    background:
+        radial-gradient(circle at 10% 10%, rgba(79, 70, 229, 0.22), transparent 35%),
+        radial-gradient(circle at 90% 20%, rgba(14, 165, 233, 0.2), transparent 30%),
+        #0b1120;
+}
+
+.layout-root.theme-dark ::deep .hc-appbar {
+    background: rgba(2, 6, 23, 0.78) !important;
+    border-bottom-color: rgba(129, 140, 248, 0.26);
+}
+
+.layout-root.theme-dark ::deep .hc-drawer {
+    border-right-color: rgba(129, 140, 248, 0.22);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.82)) !important;
+}
+
+.layout-root.theme-dark ::deep .hc-nav-menu .mud-nav-link:hover {
+    background: rgba(99, 102, 241, 0.28);
+}
+
+.layout-root.theme-dark .error-boundary-card {
+    border-color: rgba(251, 113, 133, 0.45);
+    background: linear-gradient(145deg, rgba(69, 10, 10, 0.68), rgba(39, 39, 42, 0.86));
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.3);
+}
+
+.layout-root.theme-dark .global-loading-overlay {
+    background: rgba(2, 6, 23, 0.62);
 }
