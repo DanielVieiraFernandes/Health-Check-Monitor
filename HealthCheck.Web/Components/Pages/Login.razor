@@ -109,6 +109,16 @@
         if (authState.User.Identity?.IsAuthenticated == true)
             navigationManager.NavigateTo("/home", true);
 
+        var uri = navigationManager.ToAbsoluteUri(navigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        var sessionExpired = query.Get("sessionExpired");
+
+        if (string.Equals(sessionExpired, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            snackbar.Add("Sua sessão expirou. Faça login novamente.", Severity.Warning);
+            navigationManager.NavigateTo("/", true);
+        }
+
         loadingState.Hide();
     }
 

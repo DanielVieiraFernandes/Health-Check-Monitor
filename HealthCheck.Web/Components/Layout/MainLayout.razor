@@ -106,6 +106,7 @@
     private bool drawerOpen = true;
     private bool isDarkMode = true;
     private UserSessionInfo? sessionInfo = null;
+    private bool wasAuthenticated;
     // Referência ao seu componente customizado
     private CustomErrorBoundary? meuBoundary;
 
@@ -202,11 +203,16 @@
         //------------------------------------------------------------------------------------------
         // Lê o usuário autenticado e popula o objeto de sessão.
         //------------------------------------------------------------------------------------------
+        var previouslyAuthenticated = sessionInfo != null || wasAuthenticated;
         var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
         sessionInfo = authenticationService.GetSessionInfo(authState.User);
+        wasAuthenticated = sessionInfo != null;
 
         if (sessionInfo == null)
-            navigationManager.NavigateTo("/", true);
+        {
+            var target = previouslyAuthenticated ? "/?sessionExpired=true" : "/";
+            navigationManager.NavigateTo(target, true);
+        }
     }
 
     private async Task HandleLogout()
