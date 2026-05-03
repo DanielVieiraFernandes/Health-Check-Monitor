@@ -41,6 +41,13 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
         return Result<MonitoredSystem>.AsSuccess(monitoredSystem);
     }
 
+    /// <summary>
+    /// Recupera todos os sistemas monitorados, aplicando os filtros de pesquisa fornecidos.
+    /// Utilizado para recuperar os sistemas monitorados para o usuário administrador, que tem acesso a 
+    /// todos os sistemas monitorados, independentemente do usuário
+    /// </summary>
+    /// <param name="searchFiltersMonitoredSystems"></param>
+    /// <returns></returns>
     public async Task<Result<IList<MonitoredSystem>>> GetAllMonitoredSystems(SearchFiltersMonitoredSystems? searchFiltersMonitoredSystems = null)
     {
         if (searchFiltersMonitoredSystems != null)
@@ -59,6 +66,37 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
 
         return Result<IList<MonitoredSystem>>.AsSuccess(monitoredSystems);
     }
+
+    /// <summary>
+    /// Recupera todos os sistemas monitorados, aplicando os filtros de pesquisa fornecidos,<br/>
+    /// e garantindo que o usuário só tenha acesso aos sistemas monitorados que pertencem a ele.
+    /// </summary>
+    /// <param name="searchFiltersMonitoredSystems"></param>
+    /// <param name="userId"></param>
+    /// <returns></returns>
+    public async Task<Result<IList<MonitoredSystem>>> GetAllMonitoredSystems(SearchFiltersMonitoredSystems? searchFiltersMonitoredSystems = null, Guid userId)
+    {
+        if (searchFiltersMonitoredSystems != null)
+        {
+            NormalizeSearchFilters(searchFiltersMonitoredSystems);
+
+            SearchFiltersMonitoredSystemsValidator validator = new();
+
+            var validationResult = validator.Validate(searchFiltersMonitoredSystems);
+
+            if (!validationResult.IsValid)
+                return Result<IList<MonitoredSystem>>.AsFailure(new Failure(HttpStatusCode.BadRequest, validationResult));
+        }
+
+        var monitoredSystems = await monitoredSystemRepository.GetAll(searchFiltersMonitoredSystems);
+
+        return Result<IList<MonitoredSystem>>.AsSuccess(monitoredSystems);
+    }
+
+    //===========================================================================================================
+    //OBS: Esse método é utilizado para atualizar um sistema monitorado tanto pelo usuário que o criou,
+    //quanto pelo sistema/usuário administrador.
+    //===========================================================================================================
 
     public async Task<Result<object>> UpdateMonitoredSystem(MonitoredSystem monitoredSystem,
                                                             MonitoredSystem monitoredSystemClone,
@@ -103,6 +141,7 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
 
         return Result<object>.AsSuccess(new { });
     }
+
     public async Task<Result<object>> DeleteMonitoredSystem(Guid id, Guid userId)
     {
         var monitoredSystem = await monitoredSystemRepository.GetById(id);
