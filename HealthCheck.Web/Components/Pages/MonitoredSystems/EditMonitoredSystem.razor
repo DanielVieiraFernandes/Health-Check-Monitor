@@ -103,6 +103,10 @@
 </SfDialog>
 
 @code {
+
+    [CascadingParameter(Name = "UserSession")]
+    public UserSessionInfo? UserSession { get; set; }
+
     [CascadingParameter(Name = "IsDarkMode")]
     public bool IsDarkMode { get; set; }
 
@@ -208,17 +212,18 @@
 
             if (IsCreateMode)
             {
+                monitoredSystem.UserId = UserSession!.UserId;
+
                 var result = await monitoredSystemService.CreateMonitoredSystem(monitoredSystem);
 
                 if (result.IsFailure)
                 {
-
                     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                     // Caso tenha ocorrido um erro de validação, exibir mensagens específicas para cada campo
                     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                     if(result.Failure!.StatusCode == System.Net.HttpStatusCode.BadRequest)
                     {
-                        ApplyFieldErrors(result.Failure);
+                        ApplyFieldErrors(result.Failure); 
                     }
 
                     await ShowFailureDialog("Falha ao registrar sistema", result.Failure);
@@ -229,7 +234,7 @@
             }
             else
             {
-                var result = await monitoredSystemService.UpdateMonitoredSystem(monitoredSystem, originalMonitoredSystem, "user");
+                var result = await monitoredSystemService.UpdateMonitoredSystem(monitoredSystem, originalMonitoredSystem, changeBy: UserSession!.UserName);
 
                 if (result.IsFailure)
                 {
@@ -316,7 +321,7 @@
         {
             loadingState.Show("Excluindo sistema monitorado...");
 
-            var result = await monitoredSystemService.DeleteMonitoredSystem(idToDelete, Guid.NewGuid());
+            var result = await monitoredSystemService.DeleteMonitoredSystem(idToDelete, UserSession!.UserId);
 
             if (result.IsFailure)
             {
