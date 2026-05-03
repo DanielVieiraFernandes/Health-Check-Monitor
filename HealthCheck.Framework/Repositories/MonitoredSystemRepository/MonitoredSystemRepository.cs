@@ -15,11 +15,9 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
     {
         List<string> ignoredAttr = [nameof(MonitoredSystem.Id)];
 
-        string sql = QueryBuilder.BuildInsertQuery(monitoredSystem, ignoredAttr, TABLE_NAME);
+        string sql = QueryBuilder.BuildInsertQuery(monitoredSystem, ignoredAttr, TABLE_NAME, true);
 
         NpgsqlConnection connection = connectionAlreadyCreated ?? await databaseService.CreateNewPgConnection();
-
-        sql += " RETURNING *";
 
         var result = await connection.QueryFirstAsync<MonitoredSystem>(sql, monitoredSystem);
 
@@ -113,8 +111,6 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
                 }
             }
         }
-
-
 
         //------------------------------------------------------------------------------------------------------------------------------------------
         // Por enquanto, deixarei fixo a ordenação pela data de última verificação, em ordem decrescente.

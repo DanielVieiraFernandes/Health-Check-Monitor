@@ -168,6 +168,12 @@
         originalMonitoredSystem = monitoredSystem.Clone();
     }
 
+    private async Task SetVisible(bool isVisible)
+    {
+        Visible = isVisible;
+        await VisibleChanged.InvokeAsync(isVisible);
+    }
+
     private async Task OnDeleteClick(object _)
     {
         if (IsCreateMode || loadingState.IsLoading)

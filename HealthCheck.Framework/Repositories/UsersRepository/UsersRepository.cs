@@ -17,7 +17,7 @@ public class UsersRepository(DatabaseService databaseService) : IUsersRepository
         if (connection == null)
             throw new Exception("Failed to create a database connection.");
 
-        string sqlInsert = QueryBuilder.BuildInsertQuery(user, [nameof(User.Id)], TABLE_NAME);
+        string sqlInsert = QueryBuilder.BuildInsertQuery(user, [nameof(User.Id)], TABLE_NAME, true);
 
         var result = await connection.QueryFirstOrDefaultAsync<User?>(sqlInsert, user);
 

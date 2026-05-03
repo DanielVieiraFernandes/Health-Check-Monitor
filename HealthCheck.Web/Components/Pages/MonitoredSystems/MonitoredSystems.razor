@@ -129,6 +129,9 @@
 
 @code {
 
+    [CascadingParameter(Name = "UserSession")]
+    public UserSessionInfo? UserSession { get; set; }
+
     // Variáveis de estado
     private bool isLoaded;
 
@@ -173,7 +176,7 @@
     {
         try
         {
-            var result = await monitoredSystemService.GetAllMonitoredSystems(searchFiltersMonitoredSystems);
+            var result = await monitoredSystemService.GetAllMonitoredSystems(UserSession!.UserId, searchFiltersMonitoredSystems);
 
             if (result.IsFailure)
             {
@@ -185,6 +188,7 @@
         }   
         catch (Exception)
         {
+            snackbar.Add("Ocorreu um erro ao carregar os sistemas monitorados", Severity.Error); 
             throw;
         }
         finally
