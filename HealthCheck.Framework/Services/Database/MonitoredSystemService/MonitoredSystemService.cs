@@ -74,7 +74,7 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
     /// <param name="searchFiltersMonitoredSystems"></param>
     /// <param name="userId"></param>
     /// <returns></returns>
-    public async Task<Result<IList<MonitoredSystem>>> GetAllMonitoredSystems(SearchFiltersMonitoredSystems? searchFiltersMonitoredSystems = null, Guid userId)
+    public async Task<Result<IList<MonitoredSystem>>> GetAllMonitoredSystems(Guid userId, SearchFiltersMonitoredSystems? searchFiltersMonitoredSystems = null)
     {
         if (searchFiltersMonitoredSystems != null)
         {

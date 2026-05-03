@@ -52,47 +52,75 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
             await connection.DisposeAsync();
     }
 
-    public async Task<IList<MonitoredSystem>> GetAll(SearchFiltersMonitoredSystems? searchFiltersMonitoredSystems = null, NpgsqlConnection? connectionAlreadyCreated = null)
+    public async Task<IList<MonitoredSystem>> GetAll(SearchFiltersMonitoredSystems? searchFiltersMonitoredSystems = null, Guid? userId = null, NpgsqlConnection? connectionAlreadyCreated = null)
     {
         string sql = QueryBuilder.BuildSelectQuery(TABLE_NAME);
 
         DynamicParameters? parameters = null;
 
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //TODO: Adicionar filtros para tornar a busca mais flexível.
+        // Por exemplo, filtros para buscar apenas os sistemas monitorados que estão com status de saúde "Ruim" ou "Crítico",
+        // ou filtros para buscar os sistemas monitorados que estão com a última verificação feita há mais de X horas, etc.
+        // Esses filtros serão passados através do objeto SearchFiltersMonitoredSystems, que será recebido como parâmetro nesse método.
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
         //********************************************************************************
-        // Caso o usuário tenha informado algum filtro de busca, eu aplico ele na query
+        // Caso o usuário tenha informado algum filtro de busca ou o sistema esteja
+        // buscando os sistemas de um usuário específico, aplico os filtros na query
         //********************************************************************************
-        if (searchFiltersMonitoredSystems != null)
+        if (searchFiltersMonitoredSystems != null || userId is not null)
         {
             parameters = new();
 
             sql += " WHERE 1=1 ";
 
             //********************************************************************************
-            // Se o usuário informou um termo de busca
+            // Se especifiquei um userId, busco apenas os sistemas monitorados daquele usuário
             //********************************************************************************
-            if (!string.IsNullOrEmpty(searchFiltersMonitoredSystems.SearchTerm))
+            if (userId != null)
             {
-                //*************************************************************************************************************
-                // Crio uma lista de termos, separando o termo de busca por espaço. Assim, se o usuário buscar por
-                // "Sistema de Pagamento", eu vou buscar por "Sistema", "de" e "Pagamento"
-                //*************************************************************************************************************
-                var terms = searchFiltersMonitoredSystems.SearchTerm.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+                sql += " AND user_id = @UserId";
+                parameters.Add("UserId", userId);
+            }
 
-                // Índice para criar parâmetros únicos para cada termo
-                int tIndex = 0;
-
-                foreach (var item in terms)
+            if (searchFiltersMonitoredSystems != null)
+            {
+                //********************************************************************************
+                // Se o usuário informou um termo de busca
+                //********************************************************************************
+                if (!string.IsNullOrEmpty(searchFiltersMonitoredSystems.SearchTerm))
                 {
-                    //*******************************************************************************************************************************
-                    // Cada iteração, eu adiciono uma condição na query para buscar o termo no nome, url ou descrição do sistema monitorado
-                    // e adiciono um parâmetro para o termo, usando o índice para garantir que cada parâmetro seja único
-                    //*******************************************************************************************************************************
-                    sql += $" AND (name ILIKE @Term{tIndex} OR url ILIKE @Term{tIndex} OR description ILIKE @Term{tIndex})";
-                    parameters.Add($"Term{tIndex}", $"%{item}%");
-                    tIndex++;
+                    //*************************************************************************************************************
+                    // Crio uma lista de termos, separando o termo de busca por espaço. Assim, se o usuário buscar por
+                    // "Sistema de Pagamento", eu vou buscar por "Sistema", "de" e "Pagamento"
+                    //*************************************************************************************************************
+                    var terms = searchFiltersMonitoredSystems.SearchTerm.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+
+                    // Índice para criar parâmetros únicos para cada termo
+                    int tIndex = 0;
+
+                    foreach (var item in terms)
+                    {
+                        //*******************************************************************************************************************************
+                        // Cada iteração, eu adiciono uma condição na query para buscar o termo no nome, url ou descrição do sistema monitorado
+                        // e adiciono um parâmetro para o termo, usando o índice para garantir que cada parâmetro seja único
+                        //*******************************************************************************************************************************
+                        sql += $" AND (name ILIKE @Term{tIndex} OR url ILIKE @Term{tIndex} OR description ILIKE @Term{tIndex})";
+                        parameters.Add($"Term{tIndex}", $"%{item}%");
+                        tIndex++;
+                    }
                 }
             }
         }
+
+
+
+        //------------------------------------------------------------------------------------------------------------------------------------------
+        // Por enquanto, deixarei fixo a ordenação pela data de última verificação, em ordem decrescente.
+        // No entanto, futuramente, irei adicionar um filtro para o usuário escolher a ordenação que preferir
+        //------------------------------------------------------------------------------------------------------------------------------------------
+        sql += " ORDER BY last_checked_at DESC";
 
         NpgsqlConnection connection = connectionAlreadyCreated ?? await databaseService.CreateNewPgConnection();
 
