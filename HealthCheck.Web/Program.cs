@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor.Services;
 using Syncfusion.Blazor;
+using System.Globalization;
 
 namespace HealthCheck.Web;
 
@@ -45,9 +46,10 @@ public class Program
             {
                 options.LoginPath = "/";
                 options.SlidingExpiration = true;
+                //options.Cookie = new() { SameSite = SameSiteMode.Strict, HttpOnly = true, };
                 options.ExpireTimeSpan = builder.Configuration
                     .GetSection("UserSession")
-                    .Get<UserSessionSettings>()?.SessionDuration ?? TimeSpan.FromHours(8);
+                    .Get<UserSessionSettings>()!.SessionDuration;
             });
 
         builder.Services.AddAuthorization();
@@ -56,6 +58,11 @@ public class Program
 
         builder.Services.AddServices(builder.Configuration);
         builder.Services.AddRepositories();
+
+        var cultureInfo = new CultureInfo("pt-BR");
+
+        CultureInfo.CurrentCulture = cultureInfo;
+        CultureInfo.CurrentUICulture = cultureInfo;
 
         var app = builder.Build();
 

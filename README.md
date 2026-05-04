@@ -1,8 +1,8 @@
 # 🚀 HealthCheck Monitor
 
 <p align="center">
-  <b>Monitoramento inteligente de endpoints com foco em confiabilidade, clareza e evolução contínua.</b><br/>
-  <i>Projeto Web em Blazor Server, construído em .NET 10</i>
+  <b>Monitoramento inteligente de serviços com foco em confiabilidade, clareza e evolução contínua.</b><br/>
+  <i>Aplicação web em Blazor Server, construída em .NET 10</i>
 </p>
 
 ---
@@ -45,15 +45,23 @@ Essa divisão favorece **manutenção**, **evolução incremental** e **separaç
 
 ---
 
-## ⚙️ Stack Técnica
+## ⚙️ Stack Técnica (visão geral)
 
-- `.NET 10`
-- `Blazor Server`
-- `PostgreSQL`
-- `Dapper`
-- `FluentValidation`
-- `MudBlazor`
-- `Syncfusion Blazor`
+- `.NET 10` para a base da aplicação
+- `Blazor Server` para a interface web
+- `PostgreSQL` como banco de dados
+- `Dapper` para acesso a dados
+- `FluentValidation` para validações
+- `MudBlazor` e `Syncfusion Blazor` para a experiência visual
+- Autenticação com cookies do Microsoft ASP.NET
+
+---
+
+## 🔐 Autenticação (visão geral)
+
+- ✅ Autenticação baseada em cookies do **Microsoft ASP.NET**
+- ✅ Sessão com expiração configurável
+- ✅ Login e logout centralizados via endpoints internos
 
 ---
 
@@ -65,6 +73,7 @@ Essa divisão favorece **manutenção**, **evolução incremental** e **separaç
 - Persistência de dados
 - Base de validações
 - Camada de feedback visual para o usuário
+- Fluxo de autenticação e sessão com cookies
 
 ### 🔄 Em evolução
 - Execução automática recorrente das verificações
