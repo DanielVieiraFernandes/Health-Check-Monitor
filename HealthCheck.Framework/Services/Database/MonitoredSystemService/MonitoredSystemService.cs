@@ -27,6 +27,15 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
             return Result<MonitoredSystem>.AsFailure(failure);
         }
 
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //VALIDO A EXISTÊNCIA DE UM SISTEMA MONITORADO COM A MESMA URL, PARA EVITAR DUPLICIDADE
+        //DE REGISTROS E GARANTIR A INTEGRIDADE DOS DADOS
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        var existingMonitoredSystem = await monitoredSystemRepository.GetByUrl(monitoredSystem.Url);
+
+        if (existingMonitoredSystem != null)
+            return Result<MonitoredSystem>.AsFailure(new Failure(HttpStatusCode.BadRequest, BuildValidationResult("Já existe um sistema monitorado com a mesma URL")));
+
         monitoredSystem = await monitoredSystemRepository.Create(monitoredSystem);
 
         return Result<MonitoredSystem>.AsSuccess(monitoredSystem);

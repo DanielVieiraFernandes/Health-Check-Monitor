@@ -150,6 +150,25 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
         return result;
     }
 
+    public async Task<MonitoredSystem?> GetByUrl(string url, NpgsqlConnection? connectionAlreadyCreated = null)
+    {
+        string whereClause = $"url = @Url";
+
+        string sql = QueryBuilder.BuildSelectQuery(TABLE_NAME, whereClause);
+
+        NpgsqlConnection connection = connectionAlreadyCreated ?? await databaseService.CreateNewPgConnection();
+
+        var result = await connection.QueryFirstOrDefaultAsync<MonitoredSystem?>(sql, new { Url = url });
+
+        //********************************************************************************
+        // Caso eu tenha criado a conexão aqui, eu fecho ela
+        //********************************************************************************
+        if (connectionAlreadyCreated == null)
+            await connection.DisposeAsync();
+
+        return result;
+    }
+
     public async Task Update(MonitoredSystem monitoredSystem, NpgsqlConnection? connectionAlreadyCreated = null)
     {
         List<string> ignoredAttr = [nameof(MonitoredSystem.Id)];
