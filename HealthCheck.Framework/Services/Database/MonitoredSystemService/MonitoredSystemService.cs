@@ -5,6 +5,7 @@ using HealthCheck.Framework.Repositories.MonitoredSystemRepository;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService.Filters;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService.Validators;
 using HealthCheck.Framework.Services.Database.Resources;
+using System.Globalization;
 using System.Net;
 
 namespace HealthCheck.Framework.Services.Database.MonitoredSystemService;
@@ -41,7 +42,17 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
         return Result<MonitoredSystem>.AsSuccess(monitoredSystem);
     }
 
-    public async Task<Result<IList<MonitoredSystem>>> GetAllMonitoredSystems(SearchFiltersMonitoredSystems? searchFiltersMonitoredSystems = null)
+    /// <summary>
+    /// Recupera todos os sistemas monitorados, aplicando os filtros de pesquisa fornecidos, e opcionalmente <br/>
+    /// filtrando por usuário, para obter uma lista de sistemas monitorados que correspondam aos critérios de pesquisa <br/>
+    /// especificados, permitindo ao usuário visualizar e gerenciar seus sistemas monitorados de forma eficiente e personalizada, <br/>
+    /// com base em suas preferências e necessidades específicas
+    /// </summary>
+    /// <param name="searchFiltersMonitoredSystems">Filtros de pesquisa para os sistemas monitorados</param>
+    /// <param name="userId">ID do usuário para filtrar os sistemas monitorados</param>
+    /// <returns>Lista de sistemas monitorados do tipo <see cref="MonitoredSystem"/> que correspondem aos critérios de pesquisa</returns>
+    public async Task<Result<IList<MonitoredSystem>>> GetAllMonitoredSystems(SearchFiltersMonitoredSystems? searchFiltersMonitoredSystems = null,
+                                                                             Guid? userId = null)
     {
         if (searchFiltersMonitoredSystems != null)
         {
@@ -55,7 +66,7 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
                 return Result<IList<MonitoredSystem>>.AsFailure(new Failure(HttpStatusCode.BadRequest, validationResult));
         }
 
-        var monitoredSystems = await monitoredSystemRepository.GetAll(searchFiltersMonitoredSystems);
+        var monitoredSystems = await monitoredSystemRepository.GetAll(searchFiltersMonitoredSystems, userId);
 
         return Result<IList<MonitoredSystem>>.AsSuccess(monitoredSystems);
     }
@@ -94,15 +105,24 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
         //===========================================================================================================
         if (!string.IsNullOrWhiteSpace(differences))
         {
-            differences += $"\n * Alterado por último em: {monitoredSystem.UpdatedAt:yyyy-MM-dd HH:mm:ss} por {changeBy} *";
+            var updatedAt = monitoredSystem.UpdatedAt.ToString("g", CultureInfo.CurrentCulture);
+            var historyEntry = $@"========================================
+Alterações registradas
+========================================
+{differences.Trim()}
+----------------------------------------
+Alterado por último em: {updatedAt}
+Responsável: {changeBy}
+========================================";
 
-            monitoredSystem.History += $"{differences}\n";
+            monitoredSystem.History += $"{historyEntry}\n";
         }
 
         await monitoredSystemRepository.Update(monitoredSystem);
 
         return Result<object>.AsSuccess(new { });
     }
+
     public async Task<Result<object>> DeleteMonitoredSystem(Guid id, Guid userId)
     {
         var monitoredSystem = await monitoredSystemRepository.GetById(id);

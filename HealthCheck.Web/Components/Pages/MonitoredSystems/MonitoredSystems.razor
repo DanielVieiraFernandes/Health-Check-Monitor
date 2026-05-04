@@ -17,7 +17,7 @@
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    StartIcon="@Icons.Material.Filled.AddCircleOutline"
-                   OnClick="OpenCreateDialog"
+                   OnClick="() => OpenMonitoredSystemDialog()"
                    Disabled="loadingState.IsLoading">
             Novo sistema
         </MudButton>
@@ -27,7 +27,9 @@
     <MudPaper Class="search-panel pa-4 mb-4" Elevation="1">
         <MudStack Spacing="3">
             <MudStack Row="true" Class="search-row" Spacing="2" AlignItems="AlignItems.Center">
-                <MudTextField @bind-Value="searchFiltersMonitoredSystems.SearchTerm"
+                <MudTextField @ref="textSearchRef"
+                              T="string"
+                              @oninput="OnInputSearch"
                               @onkeydown="OnKeyDownEnter"
                               Placeholder="Pesquisar por nome, URL ou descrição"
                               Variant="Variant.Outlined"
@@ -60,7 +62,7 @@
         </MudStack>
     </MudPaper>
 
-    @if (isLoaded && monitoredSystems.Count == 0)
+    @if (!loadingState.IsLoading && monitoredSystems.Count == 0)
     {
         <MudPaper Class="empty-state pa-8" Elevation="0">
             <MudStack AlignItems="AlignItems.Center" Spacing="1">
@@ -76,7 +78,7 @@
             @foreach (var system in monitoredSystems)
             {
                 <MudItem xs="12" sm="6" lg="4">
-                    <div class="system-card-shell" role="button" tabindex="0" @onclick="() => OpenEditDialog(system.Id)">
+                    <div class="system-card-shell" role="button" tabindex="0" @onclick="() => OpenMonitoredSystemDialog(system.Id)">
                         <MudPaper Class="system-card pa-4" Elevation="2">
                             <MudStack Spacing="2">
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
@@ -122,19 +124,59 @@
     }
 </div>
 
-<EditMonitoredSystem  @bind-Visible="isFormDialogVisible"
-                           IsCreateMode="selectedMonitoredSystemId == null"
-                           MonitoredSystemId="selectedMonitoredSystemId"
-                           OnSaved="HandleDialogSaved" />
+<SfDialog @ref="monitoredSystemDialog"
+          Width="980px"
+          IsModal="true"
+          ShowCloseIcon="true"
+          Visible="false"
+          CloseOnEscape="true"
+          Target=".layout-root"
+          CssClass="@DialogCssClass"
+          ZIndex="1100"
+          AllowDragging="false">
+    <DialogTemplates>
+        <Header>
+            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@(selectedMonitoredSystemId == null ? Icons.Material.Filled.AddCircleOutline : Icons.Material.Filled.Edit)" Color="Color.Primary" />
+                <MudText Typo="Typo.h6">@(editMonitoredSystem?.GetDialogTitle() ?? "")</MudText>
+            </MudStack>
+        </Header>
+
+        <Content>
+            <EditMonitoredSystem @ref="editMonitoredSystem"
+                                 IsCreateMode="selectedMonitoredSystemId == null"
+                                 MonitoredSystemId="selectedMonitoredSystemId"
+                                 OnSaved="HandleDialogSaved"
+                                 OnCloseRequested="CloseDialog" />
+        </Content>
+    </DialogTemplates>
+
+    <DialogButtons>
+        @if (selectedMonitoredSystemId != null)
+        {
+            <DialogButton Content="Excluir" IsPrimary="false" CssClass="e-danger delete-footer-button" Disabled="loadingState.IsLoading" OnClick="DeleteDialogData"></DialogButton>
+        }
+        <DialogButton Content="Cancelar" IsPrimary="false" CssClass="e-flat" Disabled="loadingState.IsLoading" OnClick="CloseDialog"></DialogButton>
+        <DialogButton Content="@SaveButtonText" IsPrimary="true" CssClass="e-primary" Disabled="loadingState.IsLoading" OnClick="SaveDialogData"></DialogButton>
+    </DialogButtons>
+
+    <DialogEvents OnClose="CloseDialog" />
+</SfDialog>
 
 @code {
 
-    // Variáveis de estado
-    private bool isLoaded;
+    [CascadingParameter(Name = "UserSession")]
+    public UserSessionInfo? UserSession { get; set; }
 
     // Variáveis para o diálogo de criação/edição
-    private bool isFormDialogVisible;
     private Guid? selectedMonitoredSystemId;
+    private SfDialog? monitoredSystemDialog;
+    private EditMonitoredSystem? editMonitoredSystem;
+    private MudTextField<string>? textSearchRef;
+    private bool isClosingDialog;
+
+    private string DialogCssClass => UserSession?.PreferredTheme == ThemeOptions.Dark ? "monitored-system-sync-dialog monitored-system-sync-dialog-dark" : "monitored-system-sync-dialog";
+    private string SaveButtonText => selectedMonitoredSystemId == null ? "Registrar sistema" : "Salvar alterações";
 
 
     private List<MonitoredSystem> monitoredSystems = [];
@@ -152,6 +194,7 @@
         catch (Exception)
         {
             snackbar.Add("Ocorreu um erro ao carregar os sistemas monitorados", Severity.Error);
+            throw;
         } 
         finally
         {
@@ -164,6 +207,9 @@
         InvokeAsync(StateHasChanged);
     }
 
+    //***********************************************************************************************************
+    //OBS: Necessário para evitar vazamento de memória devido à inscrição no evento do LoadingState
+    //***********************************************************************************************************
     public void Dispose()
     {
         loadingState.OnChange -= HandleLoadingStateChanged;
@@ -173,7 +219,9 @@
     {
         try
         {
-            var result = await monitoredSystemService.GetAllMonitoredSystems(searchFiltersMonitoredSystems);
+            loadingState.Show("Carregando sistemas monitorados...");
+
+            var result = await monitoredSystemService.GetAllMonitoredSystems(searchFiltersMonitoredSystems, UserSession!.UserId);
 
             if (result.IsFailure)
             {
@@ -185,38 +233,71 @@
         }   
         catch (Exception)
         {
+            snackbar.Add("Ocorreu um erro ao carregar os sistemas monitorados", Severity.Error); 
             throw;
         }
         finally
         {
-            isLoaded = true;
+            loadingState.Hide();
         }
     }
 
-    private void OpenCreateDialog()
-    {
-        selectedMonitoredSystemId = null;
-        isFormDialogVisible = true;
-    }
-
-    private void OpenEditDialog(Guid monitoredSystemId)
+    private void OpenMonitoredSystemDialog(Guid? monitoredSystemId = null)
     {
         selectedMonitoredSystemId = monitoredSystemId;
-        isFormDialogVisible = true;
+        monitoredSystemDialog!.ShowAsync();
+    }
+
+    private async Task SaveDialogData()
+    {
+        if (editMonitoredSystem is null)
+            return;
+
+        await editMonitoredSystem.SaveAsync();
+    }
+
+    private async Task DeleteDialogData()
+    {
+        if (editMonitoredSystem is null)
+            return;
+
+        await editMonitoredSystem.DeleteAsync();
+    }
+
+    private async Task CloseDialog()
+    {
+        if (isClosingDialog)
+            return;
+
+        isClosingDialog = true;
+        selectedMonitoredSystemId = null;
+
+        if (monitoredSystemDialog is not null)
+        {
+            await monitoredSystemDialog.HideAsync();
+        }
+
+        isClosingDialog = false;
     }
 
     private async Task HandleDialogSaved()
     {
-        loadingState.Show("Carregando sistemas monitorados...");
         await LoadMonitoredSystemsData();
-        loadingState.Hide();    
+        await CloseDialog();
     }
+
+    private async Task OnInputSearch(ChangeEventArgs args) =>
+        searchFiltersMonitoredSystems.SearchTerm = args.Value?.ToString() ?? "";
 
     private async Task OnKeyDownEnter(KeyboardEventArgs args)
     {
-        loadingState.Show("Carregando sistemas monitorados...");
-        await LoadMonitoredSystemsData();
-        loadingState.Hide();
+        if(args.Key == "Enter")
+        {
+            await LoadMonitoredSystemsData();
+            //NECESSÁRIO PARA GARANTIR QUE O FOCO VOLTE PARA O CAMPO DE PESQUISA APÓS PRESSIONA ENTER,
+            //POIS O COMPONENTE DE LOADING FICA SOBREPOSTO E CHAMA O STATEHASCHANGED, O QUE CAUSA A PERDA DE FOCO DO CAMPO DE PESQUISA
+            await textSearchRef!.FocusAsync();
+        }
     }
 
     private static Color GetStatusColor(HealthStatus status)

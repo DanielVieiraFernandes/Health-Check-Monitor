@@ -9,7 +9,7 @@ public class QueryBuilder
                                              string tableName,
                                              bool returnResult = false)
     {
-        Dictionary<string, string> columnsAndValues = GetColumnsAndValues(entity, ignoreThisAttr);
+        Dictionary<string, string> columnsAndValues = GetColumnsAndValues<T>(ignoreThisAttr);
 
         string sql = $"INSERT INTO {tableName} ({string.Join(", ", columnsAndValues.Keys)}) VALUES ({string.Join(", ", columnsAndValues.Values)})";
 
@@ -21,7 +21,7 @@ public class QueryBuilder
 
     public static string BuildUpdateQuery<T>(T entity, List<string> ignoreThisAttr, string tableName, string whereClause)
     {
-        Dictionary<string, string> columnsAndValues = GetColumnsAndValues(entity, ignoreThisAttr);
+        Dictionary<string, string> columnsAndValues = GetColumnsAndValues<T>(ignoreThisAttr);
         return $"UPDATE {tableName} SET {string.Join(", ", columnsAndValues.Select(kv => $"{kv.Key} = {kv.Value}"))} WHERE {whereClause}";
     }
 
@@ -35,7 +35,7 @@ public class QueryBuilder
         return $"SELECT * FROM {tableName}" + (string.IsNullOrEmpty(whereClause) ? "" : $" WHERE {whereClause}");
     }
 
-    private static Dictionary<string, string> GetColumnsAndValues<T>(T entity, List<string> ignoreThisAttr)
+    private static Dictionary<string, string> GetColumnsAndValues<T>(List<string> ignoreThisAttr)
     {
         PropertyInfo[] properties = typeof(T).GetProperties();
 
