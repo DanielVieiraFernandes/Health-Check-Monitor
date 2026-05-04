@@ -28,6 +28,24 @@ Com o sistema, é possível:
 
 ---
 
+## 🖼️ Telas do Projeto
+
+<p align="center">
+  <img src="docs/images/login.png" alt="Tela de login" width="800" />
+</p>
+
+<p align="center">
+  <img src="docs/images/home.png" alt="Dashboard inicial" width="800" />
+</p>
+
+<p align="center">
+  <img src="docs/images/sistemas_monitorados.png" alt="Lista de sistemas monitorados" width="800" />
+</p>
+
+<p align="center">
+  <img src="docs/images/edicao_sistema_monitorado.png" alt="Edição de sistema monitorado" width="800" />
+</p>
+
 ## 🏗️ Arquitetura da Solução
 
 O projeto está organizado em três camadas/projetos principais:
