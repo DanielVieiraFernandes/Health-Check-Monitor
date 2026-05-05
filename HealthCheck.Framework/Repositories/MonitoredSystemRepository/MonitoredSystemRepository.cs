@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using HealthCheck.Framework.Enums;
 using HealthCheck.Framework.Helpers;
 using HealthCheck.Framework.Models;
 using HealthCheck.Framework.Services.Database;
@@ -167,6 +168,40 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
             await connection.DisposeAsync();
 
         return result;
+    }
+
+    /// <summary>
+    /// Recupera os sistemas monitorados que estão pendentes de verificação, ou seja, aqueles que ainda não foram 
+    /// verificados ou que estão com a última verificação feita há mais de X horas (dependendo da frequência 
+    /// de monitoramento configurada para cada sistema monitorado). <br/>
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public async Task<List<MonitoredSystem>> GetPending(NpgsqlConnection? connectionAlreadyCreated = null)
+    {
+        //********************************************************************************************
+        //SE O SISTEMA NUNCA FOI CHECADO, ENTÃO, A URL SERÁ RETORNADA PARA CHECAGEM.
+        //SE O SISTEMA FOI CHECADO, MAS O INTERVALO DESDE A ÚLTIMA CHECAGEM FOR MAIOR OU
+        //IGUAL AO CONFIGURADO,ENTÃO, A URL SERÁ RETORNADA PARA CHECAGEM.
+        //********************************************************************************************
+        string sql = $@"SELECT * FROM {TABLE_NAME} 
+                    WHERE last_status = {(int)HealthStatus.Unknown} OR (last_checked_at IS NULL 
+                       OR last_checked_at <= (NOW() - (INTERVAL '1 minute' * interval_in_minutes)))";
+
+        NpgsqlConnection connection = connectionAlreadyCreated ?? await databaseService.CreateNewPgConnection();
+
+        var result = await connection.QueryAsync<MonitoredSystem>(sql);
+
+        if (result == null)
+            return [];
+
+        //********************************************************************************
+        // Caso eu tenha criado a conexão aqui, eu fecho ela
+        //********************************************************************************
+        if (connectionAlreadyCreated == null)
+            await connection.DisposeAsync();
+
+        return [.. result];
     }
 
     public async Task Update(MonitoredSystem monitoredSystem, NpgsqlConnection? connectionAlreadyCreated = null)

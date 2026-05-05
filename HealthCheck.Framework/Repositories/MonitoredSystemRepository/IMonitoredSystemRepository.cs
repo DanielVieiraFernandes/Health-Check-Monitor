@@ -14,4 +14,5 @@ public interface IMonitoredSystemRepository
                                         NpgsqlConnection? connectionAlreadyCreated = null);
     Task<MonitoredSystem?> GetById(Guid id, NpgsqlConnection? connectionAlreadyCreated = null);
     Task<MonitoredSystem?> GetByUrl(string url, NpgsqlConnection? connectionAlreadyCreated = null);
+    Task<List<MonitoredSystem>> GetPending(NpgsqlConnection? connectionAlreadyCreated = null);
 }

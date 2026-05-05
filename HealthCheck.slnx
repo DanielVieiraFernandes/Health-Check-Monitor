@@ -2,4 +2,5 @@
   <Project Path="HealthCheck.DbUp/HealthCheck.DbUp.csproj" Id="e745c42f-e3e8-449f-ad0a-43122d5082f7" />
   <Project Path="HealthCheck.Framework/HealthCheck.Framework.csproj" />
   <Project Path="HealthCheck.Web/HealthCheck.Web.csproj" />
+  <Project Path="HealthCheck.Worker/HealthCheck.Worker.csproj" Id="3f03f11d-cede-47d6-8ba4-2d41e157fa32" />
 </Solution>

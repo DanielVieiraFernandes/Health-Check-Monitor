@@ -147,6 +147,13 @@ Responsável: {changeBy}
         return Result<object>.AsSuccess(new { });
     }
 
+    public async Task<Result<List<MonitoredSystem>>> GetPendingMonitoredSystemsAsync()
+    {
+        var pendingMonitoredSystems = await monitoredSystemRepository.GetPending();
+
+        return Result<List<MonitoredSystem>>.AsSuccess(pendingMonitoredSystems);
+    }
+
     private static ValidationResult BuildValidationResult(params string[] messages)
     {
         var errors = messages.Select(message => new ValidationFailure(string.Empty, message)).ToList();
