@@ -1,4 +1,5 @@
 ﻿using FluentValidation.Results;
+using HealthCheck.Framework.Enums;
 using HealthCheck.Framework.Helpers;
 using HealthCheck.Framework.Models;
 using HealthCheck.Framework.Repositories.MonitoredSystemRepository;
@@ -93,7 +94,22 @@ public class MonitoredSystemService(IMonitoredSystemRepository monitoredSystemRe
         if (!validationResult.IsValid)
             return Result<object>.AsFailure(new Failure(HttpStatusCode.BadRequest, validationResult));
 
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //VALIDO A EXISTÊNCIA DE UM SISTEMA MONITORADO COM A MESMA URL, PARA EVITAR DUPLICIDADE
+        //DE REGISTROS E GARANTIR A INTEGRIDADE DOS DADOS
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        var existingMonitoredSystem = await monitoredSystemRepository.GetByUrl(monitoredSystem.Url);
+
+        if (existingMonitoredSystem != null)
+            return Result<object>.AsFailure(new Failure(HttpStatusCode.BadRequest, BuildValidationResult("Já existe um sistema monitorado com a mesma URL")));
+
         monitoredSystem.UpdatedAt = DateTime.Now;
+
+        if (monitoredSystem.Url != monitoredSystemClone.Url)
+        {
+            monitoredSystem.LastCheckedAt = null;
+            monitoredSystem.LastStatus = HealthStatus.Unknown;
+        }
 
         List<string> ignoreAttributes = [nameof(MonitoredSystem.UpdatedAt),
                                          nameof(MonitoredSystem.Id),
@@ -147,6 +163,11 @@ Responsável: {changeBy}
         return Result<object>.AsSuccess(new { });
     }
 
+    /// <summary>
+    /// Recupera os sistemas monitorados que estão pendentes de verificação, ou seja, aqueles que ainda não foram
+    /// verificados ou atualizados recentemente
+    /// </summary>
+    /// <returns></returns>
     public async Task<Result<List<MonitoredSystem>>> GetPendingMonitoredSystemsAsync()
     {
         var pendingMonitoredSystems = await monitoredSystemRepository.GetPending();

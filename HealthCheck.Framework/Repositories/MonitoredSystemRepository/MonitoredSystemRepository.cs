@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using HealthCheck.Framework.Enums;
 using HealthCheck.Framework.Helpers;
 using HealthCheck.Framework.Models;
 using HealthCheck.Framework.Services.Database;
@@ -90,6 +89,8 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
                 //********************************************************************************
                 if (!string.IsNullOrEmpty(searchFiltersMonitoredSystems.SearchTerm))
                 {
+
+                    sql += " AND";
                     //*************************************************************************************************************
                     // Crio uma lista de termos, separando o termo de busca por espaço. Assim, se o usuário buscar por
                     // "Sistema de Pagamento", eu vou buscar por "Sistema", "de" e "Pagamento"
@@ -101,11 +102,16 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
 
                     foreach (var item in terms)
                     {
+
                         //*******************************************************************************************************************************
                         // Cada iteração, eu adiciono uma condição na query para buscar o termo no nome, url ou descrição do sistema monitorado
                         // e adiciono um parâmetro para o termo, usando o índice para garantir que cada parâmetro seja único
                         //*******************************************************************************************************************************
-                        sql += $" AND (name ILIKE @Term{tIndex} OR url ILIKE @Term{tIndex} OR description ILIKE @Term{tIndex})";
+                        sql += $" (name ILIKE @Term{tIndex} OR url ILIKE @Term{tIndex} OR description ILIKE @Term{tIndex})";
+
+                        if (terms.Last() != item)
+                            sql += "OR";
+
                         parameters.Add($"Term{tIndex}", $"%{item}%");
                         tIndex++;
                     }
@@ -180,13 +186,13 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
     public async Task<List<MonitoredSystem>> GetPending(NpgsqlConnection? connectionAlreadyCreated = null)
     {
         //********************************************************************************************
-        //SE O SISTEMA NUNCA FOI CHECADO, ENTÃO, A URL SERÁ RETORNADA PARA CHECAGEM.
-        //SE O SISTEMA FOI CHECADO, MAS O INTERVALO DESDE A ÚLTIMA CHECAGEM FOR MAIOR OU
-        //IGUAL AO CONFIGURADO,ENTÃO, A URL SERÁ RETORNADA PARA CHECAGEM.
+        //SE O SISTEMA NUNCA FOI CHECADO, ENTÃO, A URL SERÁ RETORNADA PARA CHECAGEM. SE O SISTEMA FOI
+        //CHECADO, MAS O INTERVALO DESDE A ÚLTIMA CHECAGEM FOR MAIOR OU IGUAL A 15 MINUTOS, ENTÃO, O
+        //SISTEMA SERÁ RETORNADO PARA CHECAGEM.
         //********************************************************************************************
         string sql = $@"SELECT * FROM {TABLE_NAME} 
-                    WHERE last_status = {(int)HealthStatus.Unknown} OR (last_checked_at IS NULL 
-                       OR last_checked_at <= (NOW() - (INTERVAL '1 minute' * interval_in_minutes)))";
+                    WHERE last_checked_at IS NULL 
+                       OR last_checked_at <= (NOW() - (INTERVAL '1 minute' * 15))";
 
         NpgsqlConnection connection = connectionAlreadyCreated ?? await databaseService.CreateNewPgConnection();
 
