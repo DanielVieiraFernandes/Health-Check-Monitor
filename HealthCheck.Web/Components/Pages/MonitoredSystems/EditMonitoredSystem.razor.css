@@ -88,6 +88,12 @@
     overflow: hidden;
 }
 
+:global(.monitored-system-sync-dialog .status-card) {
+    border-radius: 14px;
+    border: 1px solid var(--mud-palette-divider) !important;
+    background: var(--mud-palette-background-grey) !important;
+}
+
 :global(.monitored-system-sync-dialog .hint-text) {
     margin-top: -6px;
     color: var(--mud-palette-text-secondary) !important;

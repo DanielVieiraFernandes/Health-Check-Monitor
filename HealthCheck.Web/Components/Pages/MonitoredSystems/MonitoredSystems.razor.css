@@ -34,7 +34,7 @@
     border: 1px solid var(--mud-palette-divider) !important;
     background: var(--mud-palette-surface) !important;
     transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
-    min-height: 220px;
+    min-height: 190px;
     cursor: pointer;
     will-change: transform;
 }

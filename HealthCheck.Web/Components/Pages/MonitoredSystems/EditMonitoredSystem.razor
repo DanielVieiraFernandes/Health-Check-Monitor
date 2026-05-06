@@ -1,8 +1,8 @@
 @inject LoadingState loadingState
 @inject IDialogService DialogService
 
-<MudGrid>
-    <MudItem xs="12" lg="8">
+<MudGrid Class="edit-monitored-system-grid">
+    <MudItem xs="12" lg="7">
         <MudPaper Class="register-card pa-5" Elevation="0">
             <MudStack Spacing="3">
                 <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Dados do sistema</MudText>
@@ -28,27 +28,11 @@
                               Immediate="true"
                               Error="@HasError(nameof(MonitoredSystem.Url))"
                               ErrorText="@GetError(nameof(MonitoredSystem.Url))" />
-
-                <MudNumericField T="int"
-                                 @key="@($"interval-{validationVersion}")"
-                                 @bind-Value="monitoredSystem.IntervalInMinutes"
-                                 Label="Intervalo de verificação (minutos)"
-                                 Variant="Variant.Outlined"
-                                 Min="480"
-                                 Max="1440"
-                                 HideSpinButtons="false"
-                                 Immediate="true"
-                                 Error="@HasError(nameof(MonitoredSystem.IntervalInMinutes))"
-                                 ErrorText="@GetError(nameof(MonitoredSystem.IntervalInMinutes))" />
-
-                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="hint-text">
-                    Intervalo permitido pela regra atual: de 480 minutos (8 horas) até 1440 minutos (24 horas).
-                </MudText>
             </MudStack>
         </MudPaper>
     </MudItem>
 
-    <MudItem xs="12" lg="4">
+    <MudItem xs="12" lg="5">
         <MudPaper Class="preview-card pa-4" Elevation="0">
             <MudStack Spacing="2">
                 <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Pré-visualização</MudText>
@@ -67,6 +51,18 @@
                 }
             </MudStack>
         </MudPaper>
+
+        @if (!IsCreateMode)
+        {
+            <MudPaper Class="status-card pa-3 mt-3" Elevation="0">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Status atual</MudText>
+                    <MudChip T="string" Label="true" Variant="Variant.Filled" Color="@GetStatusColor(monitoredSystem.LastStatus)">
+                        @monitoredSystem.LastStatus.GetDescription()
+                    </MudChip>
+                </MudStack>
+            </MudPaper>
+        }
     </MudItem>
 </MudGrid>
 
@@ -319,6 +315,15 @@
 
     private static string FormatDateTime(DateTime value)
         => value <= DateTime.MinValue.AddDays(1) ? "Não informado" : value.ToString("dd/MM/yyyy HH:mm");
+
+    private static Color GetStatusColor(HealthStatus status)
+        => status switch
+        {
+            HealthStatus.Healthy => Color.Success,
+            HealthStatus.Unknown => Color.Warning,
+            HealthStatus.Unhealthy => Color.Error,
+            _ => Color.Default
+        };
 
     private void ResetFieldErrors()
     {
