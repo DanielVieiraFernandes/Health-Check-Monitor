@@ -81,6 +81,12 @@ public class Worker(ILogger<Worker> logger, IServiceScopeFactory scopeFactory, I
 
             var pendentes = resultPending.Success!;
 
+            if (pendentes.Count == 0)
+            {
+                logger.LogInformation("Nenhum sistema monitorado pendente para verificação.");
+                return;
+            }
+
             //Paralelismo controlado para evitar sobrecarga (5 requisições simultâneas).
             var semaphore = new SemaphoreSlim(5);
 
@@ -97,6 +103,10 @@ public class Worker(ILogger<Worker> logger, IServiceScopeFactory scopeFactory, I
                     //Crio um client para cada requisição para evitar problemas de concorrência
                     //e garantir que cada verificação seja independente.
                     var client = httpClientFactory.CreateClient();
+
+                    //Configuro um timeout de 20 segundos para não esperar por
+                    //muito tempo uma resposta do sistema
+                    client.Timeout = TimeSpan.FromSeconds(20);
 
                     //Realizo a requisição HTTP para a URL do sistema monitorado.
                     using var response = await client.GetAsync(monitoredSystem.Url, stoppingToken);
@@ -117,6 +127,11 @@ public class Worker(ILogger<Worker> logger, IServiceScopeFactory scopeFactory, I
                 finally
                 {
                     monitoredSystem.LastCheckedAt = DateTime.Now;
+
+                    //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+                    //TODO: Caso o status do sistema monitorado tenha mudado para Unhealthy ou Unknown, devo enviar um alerta (ex.: email, webhook, etc.)
+                    // para notificar os responsáveis sobre a indisponibilidade do sistema.
+                    //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
                     try
                     {

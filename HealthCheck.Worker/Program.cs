@@ -27,10 +27,14 @@ builder.Services.AddScoped(config => new DatabaseService(connectionString));
 
 builder.Services.AddScoped<MonitoredSystemService>();
 builder.Services.AddScoped<IMonitoredSystemRepository, MonitoredSystemRepository>();
-
 builder.Services.AddHttpClient();
+builder.Services.AddWindowsService(options =>
+{
+    options.ServiceName = "Servico foda!";
+});
 
 var host = builder.Build();
+
 try
 {
     host.Run();
