@@ -19,7 +19,7 @@ public class QueryBuilder
         return sql;
     }
 
-    public static string BuildUpdateQuery<T>(T entity, List<string> ignoreThisAttr, string tableName, string whereClause)
+    public static string BuildUpdateQuery<T>(string tableName, string whereClause, List<string> ignoreThisAttr)
     {
         Dictionary<string, string> columnsAndValues = GetColumnsAndValues<T>(ignoreThisAttr);
         return $"UPDATE {tableName} SET {string.Join(", ", columnsAndValues.Select(kv => $"{kv.Key} = {kv.Value}"))} WHERE {whereClause}";

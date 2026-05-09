@@ -14,4 +14,31 @@ public class MonitoredSystem
     public DateTime? LastCheckedAt { get; set; } = null;
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
+
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // ATRIBUTOS UTILITÁRIOS PARA VALIDAÇÕES E CONSTRUIR QUERIES DINÂMICAS
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    #region Atributos utilitários para validação de campos e construção de queries dinâmicas
+
+    private List<string> _ignoreAttributes = [nameof(MonitoredSystem.UpdatedAt),
+                                             nameof(MonitoredSystem.Id),
+                                             nameof(MonitoredSystem.UserId),
+                                             nameof(MonitoredSystem.LastCheckedAt),
+                                             nameof(MonitoredSystem.LastStatus)];
+
+    public List<string> GetIgnoreAttributes() => _ignoreAttributes;
+
+    public void AddIgnoreAttribute(string attributeName)
+    {
+        if (!_ignoreAttributes.Contains(attributeName))
+            _ignoreAttributes.Add(attributeName);
+    }
+    public void RemoveIgnoreAttribute(string attributeName)
+    {
+        if (_ignoreAttributes.Contains(attributeName))
+            _ignoreAttributes.Remove(attributeName);
+    }
+
+    #endregion Atributos utilitários para validação de campos e construção de queries dinâmicas
 }
