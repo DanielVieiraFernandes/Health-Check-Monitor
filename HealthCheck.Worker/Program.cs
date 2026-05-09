@@ -1,6 +1,3 @@
-using HealthCheck.Framework.Repositories.MonitoredSystemRepository;
-using HealthCheck.Framework.Services.Database;
-using HealthCheck.Framework.Services.Database.MonitoredSystemService;
 using HealthCheck.Worker;
 using Serilog;
 
@@ -12,25 +9,14 @@ Log.Logger = new LoggerConfiguration()
 builder.Services.AddSerilog();
 builder.Services.AddHostedService<Worker>();
 
-var connectionString = builder.Configuration.GetConnectionString("HealthCheckDb");
+//Adiciona todas as dependências externas do Worker
+builder.Services.AddWorkerDependencies(builder.Configuration);
 
-if (string.IsNullOrEmpty(connectionString))
-{
-    Log.Fatal("A string de conexão para o banco de dados não foi configurada. Verifique as configurações e tente novamente.");
-    return;
-}
-
-// Ativa o mapeamento de nomes com underscores para propriedades em C# (ex.: "last_checked_at" -> "LastCheckedAt")
-Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
-
-builder.Services.AddScoped(config => new DatabaseService(connectionString));
-
-builder.Services.AddScoped<MonitoredSystemService>();
-builder.Services.AddScoped<IMonitoredSystemRepository, MonitoredSystemRepository>();
 builder.Services.AddHttpClient();
 builder.Services.AddWindowsService(options =>
 {
-    options.ServiceName = "Servico foda!";
+    //System Health Checker
+    options.ServiceName = "SHC";
 });
 
 var host = builder.Build();
