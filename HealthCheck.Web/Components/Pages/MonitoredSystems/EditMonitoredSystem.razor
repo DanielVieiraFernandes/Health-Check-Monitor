@@ -2,9 +2,9 @@
 @inject IDialogService DialogService
 
 <MudGrid Class="edit-monitored-system-grid">
-    <MudItem xs="12" lg="7">
+    <MudItem xs="14" lg="7" Class="dialog-column">
         <MudPaper Class="register-card pa-5" Elevation="0">
-            <MudStack Spacing="3">
+            <MudStack Spacing="8">
                 <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Dados do sistema</MudText>
 
                 <MudTextField @bind-Value="monitoredSystem.Name"
@@ -32,7 +32,7 @@
         </MudPaper>
     </MudItem>
 
-    <MudItem xs="12" lg="5">
+    <MudItem xs="12" lg="5" Class="dialog-column">
         <MudPaper Class="preview-card pa-4" Elevation="0">
             <MudStack Spacing="2">
                 <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Pré-visualização</MudText>
