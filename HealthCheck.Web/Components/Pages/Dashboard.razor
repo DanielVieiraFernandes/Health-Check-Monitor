@@ -1,0 +1,104 @@
+@page "/dashboard"
+@attribute [Authorize]
+
+<PageTitle>Dashboard</PageTitle>
+
+<div class="dashboard-page">
+    <MudPaper Class="page-hero pa-5 mb-4" Elevation="0">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.h4" Class="font-weight-bold">Dashboard</MudText>
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Visão geral rápida para acompanhar o ambiente.</MudText>
+            </MudStack>
+        </MudStack>
+    </MudPaper>
+
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="stat-card pa-4" Elevation="1">
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Sistemas ativos</MudText>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Dns" Color="Color.Success" Size="Size.Large" />
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">--</MudText>
+                    </MudStack>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Resumo do status atual</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="stat-card pa-4" Elevation="1">
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Alertas críticos</MudText>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Report" Color="Color.Error" Size="Size.Large" />
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">--</MudText>
+                    </MudStack>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Acompanhe incidentes</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="stat-card pa-4" Elevation="1">
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Latência média</MudText>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Speed" Color="Color.Info" Size="Size.Large" />
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">--</MudText>
+                    </MudStack>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Últimas 24h</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" lg="3">
+            <MudPaper Class="stat-card pa-4" Elevation="1">
+                <MudStack Spacing="1">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Disponibilidade</MudText>
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Filled.Timeline" Color="Color.Warning" Size="Size.Large" />
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">--</MudText>
+                    </MudStack>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Visão geral semanal</MudText>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <MudGrid>
+        <MudItem xs="12" lg="7">
+            <MudPaper Class="surface-card pa-4" Elevation="1">
+                <MudStack Spacing="2">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.h6" Class="font-weight-bold">Saúde dos sistemas</MudText>
+                        <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined" Label="true">Em breve</MudChip>
+                    </MudStack>
+                    <MudPaper Class="placeholder-area pa-6" Elevation="0">
+                        <MudStack AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Filled.Insights" Size="Size.Large" Color="Color.Info" />
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Área reservada para gráficos e indicadores.</MudText>
+                        </MudStack>
+                    </MudPaper>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" lg="5">
+            <MudPaper Class="surface-card pa-4" Elevation="1">
+                <MudStack Spacing="2">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.h6" Class="font-weight-bold">Logs do worker</MudText>
+                        <MudChip T="string" Color="Color.Secondary" Variant="Variant.Outlined" Label="true">Em breve</MudChip>
+                    </MudStack>
+                    <MudPaper Class="placeholder-area pa-6" Elevation="0">
+                        <MudStack AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Filled.Subject" Size="Size.Large" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">Resumo dos eventos em tempo real.</MudText>
+                        </MudStack>
+                    </MudPaper>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Visibility">
+                        Ver detalhes
+                    </MudButton>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</div>
