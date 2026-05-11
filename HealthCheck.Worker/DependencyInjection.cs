@@ -17,7 +17,7 @@ public static class DependencyInjection
 
     private static void AddWorkerServices(IServiceCollection services)
     {
-        services.AddScoped<MonitoringServices>();
+        services.AddSingleton<MonitoringServices>();
     }
 
     private static void AddFrameworkServices(IServiceCollection services, IConfiguration configuration)

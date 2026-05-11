@@ -5,8 +5,26 @@ using System.Net;
 
 namespace HealthCheck.Worker.Services;
 
-public class MonitoringServices(ILogger<Worker> logger, IServiceScopeFactory scopeFactory, IHttpClientFactory httpClientFactory)
+public class MonitoringServices
 {
+    private readonly ILogger<Worker> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IHttpClientFactory _httpClientFactory;
+
+    private readonly uint _healthCheckTimeoutSeconds;
+
+    public MonitoringServices(ILogger<Worker> logger,
+                              IServiceScopeFactory scopeFactory,
+                              IHttpClientFactory httpClientFactory,
+                              IConfiguration configuration)
+    {
+        _logger = logger;
+        _scopeFactory = scopeFactory;
+        _httpClientFactory = httpClientFactory;
+
+        _healthCheckTimeoutSeconds = configuration.GetValue<uint>("Settings:HealthCheckTimeoutSeconds");
+    }
+
     /// <summary>
     /// Executa o monitoramento dos sistemas pendentes de verificação.
     /// </summary>
@@ -17,7 +35,7 @@ public class MonitoringServices(ILogger<Worker> logger, IServiceScopeFactory sco
         try
         {
             //Crie um escopo para serviços Scoped (ex.: repositórios/serviços de banco).
-            using var scope = scopeFactory.CreateScope();
+            using var scope = _scopeFactory.CreateScope();
             var monitoredSystemService = scope.ServiceProvider
                 .GetRequiredService<HealthCheck.Framework.Services.Database.MonitoredSystemService.MonitoredSystemService>();
 
@@ -27,16 +45,17 @@ public class MonitoringServices(ILogger<Worker> logger, IServiceScopeFactory sco
             if (resultPending.IsFailure)
             {
                 var failure = resultPending.Failure;
-                var firstError = failure?.Errors.FirstOrDefault()?.ErrorMessage ?? "Sem detalhes";
-                logger.LogWarning("Falha ao obter os sistemas pendentes. Status: {StatusCode}. Motivo: {Reason}", failure?.StatusCode, firstError);
+                var errors = string.Join("\n - ", failure?.Errors.Select(e => e.ErrorMessage) ?? ["!!!Motivo desconhecido!!!"]);
+                _logger.LogWarning("Falha ao obter os sistemas pendentes. Status: {StatusCode}. Motivo: {Reason}", failure?.StatusCode, errors);
                 return;
             }
 
             var pendentes = resultPending.Success!;
 
+            //Caso não haja sistemas monitorados pendentes para verificação, registra o aviso e retorna para a próxima execução agendada
             if (pendentes.Count == 0)
             {
-                logger.LogInformation("Nenhum sistema monitorado pendente para verificação.");
+                _logger.LogInformation("Nenhum sistema monitorado pendente para verificação.");
                 return;
             }
 
@@ -61,17 +80,17 @@ public class MonitoringServices(ILogger<Worker> logger, IServiceScopeFactory sco
                     if (!validation)
                     {
                         currentStatus = HealthStatus.Unknown;
-                        logger.LogWarning("URL bloqueada para verificação. SistemaId: {SystemId}, Url: {Url}, Motivo: Não passou na validação de destinos seguros", monitoredSystem.Id, monitoredSystem.Url);
+                        _logger.LogWarning("URL bloqueada para verificação. SistemaId: {SystemId}, Url: {Url}, Motivo: Não passou na validação de destinos seguros", monitoredSystem.Id, monitoredSystem.Url);
                         return;
                     }
 
                     //Crio um client para cada requisição para evitar problemas de concorrência
                     //e garantir que cada verificação seja independente.
-                    var client = httpClientFactory.CreateClient();
+                    var client = _httpClientFactory.CreateClient();
 
-                    //Configuro um timeout de 10 segundos para não esperar por
+                    //Configuro um timeout de segundos para não esperar por
                     //muito tempo uma resposta do sistema
-                    client.Timeout = TimeSpan.FromSeconds(10);
+                    client.Timeout = TimeSpan.FromSeconds(_healthCheckTimeoutSeconds);
 
                     //Realizo a requisição HTTP para a URL do sistema monitorado.
                     using var response = await client.GetAsync(monitoredSystem.Url, stoppingToken);
@@ -87,7 +106,7 @@ public class MonitoringServices(ILogger<Worker> logger, IServiceScopeFactory sco
                     //O ID DO SISTEMA MONITORADO E A URL.
                     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                     currentStatus = HealthStatus.Unknown;
-                    logger.LogWarning(ex, "Falha ao processar a URL pendente. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
+                    _logger.LogWarning(ex, "Falha ao processar a URL pendente. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
                 }
                 finally
                 {
@@ -110,7 +129,7 @@ public class MonitoringServices(ILogger<Worker> logger, IServiceScopeFactory sco
                     catch (Exception ex)
                     {
                         //GRAVA O LOG DE FALHA AO ATUALIZAR O SISTEMA MONITORADO, INFORMANDO O ID DO SISTEMA MONITORADO E A URL.
-                        logger.LogError(ex, "Falha ao atualizar o sistema monitorado. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
+                        _logger.LogError(ex, "Falha ao atualizar o sistema monitorado. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
                     }
 
                     semaphore.Release();
@@ -121,7 +140,7 @@ public class MonitoringServices(ILogger<Worker> logger, IServiceScopeFactory sco
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Falha ao processar URLs pendentes no worker.");
+            _logger.LogError(ex, "Falha ao processar URLs pendentes no worker.");
         }
     }
 }
