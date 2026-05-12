@@ -59,6 +59,12 @@ public class Program
         builder.Services.AddServices(builder.Configuration);
         builder.Services.AddRepositories();
 
+        //OBS: Por enquanto, irei manter a cultura fixa para pt-BR
+
+        //==============================================================================================
+        //Define a cultura padrão da aplicação para pt-BR (Brasil).
+        //==============================================================================================
+
         var cultureInfo = new CultureInfo("pt-BR");
 
         CultureInfo.CurrentCulture = cultureInfo;

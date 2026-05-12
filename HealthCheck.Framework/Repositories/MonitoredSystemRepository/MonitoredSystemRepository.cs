@@ -2,6 +2,7 @@
 using HealthCheck.Framework.Helpers;
 using HealthCheck.Framework.Models;
 using HealthCheck.Framework.Services.Database;
+using HealthCheck.Framework.Services.Database.MonitoredSystemService.DTOS;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService.Filters;
 using Npgsql;
 
@@ -50,7 +51,7 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
             await connection.DisposeAsync();
     }
 
-    public async Task<IList<MonitoredSystem>> GetAll(SearchFiltersMonitoredSystems? searchFiltersMonitoredSystems = null, Guid? userId = null, NpgsqlConnection? connectionAlreadyCreated = null)
+    public async Task<IList<MonitoredSystem>> GetAll(SearchFiltersMonitoredSystems? searchFiltersMonitoredSystems = null, NpgsqlConnection? connectionAlreadyCreated = null)
     {
         string sql = QueryBuilder.BuildSelectQuery(TABLE_NAME);
 
@@ -67,7 +68,7 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
         // Caso o usuário tenha informado algum filtro de busca ou o sistema esteja
         // buscando os sistemas de um usuário específico, aplico os filtros na query
         //********************************************************************************
-        if (searchFiltersMonitoredSystems != null || userId is not null)
+        if (searchFiltersMonitoredSystems != null)
         {
             parameters = new();
 
@@ -76,39 +77,54 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
             //********************************************************************************
             // Se especifiquei um userId, busco apenas os sistemas monitorados daquele usuário
             //********************************************************************************
-            if (userId != null)
+            if (searchFiltersMonitoredSystems.UserId != null)
             {
                 sql += " AND user_id = @UserId";
-                parameters.Add("UserId", userId);
+                parameters.Add("UserId", searchFiltersMonitoredSystems.UserId);
             }
 
-            if (searchFiltersMonitoredSystems != null)
+            //********************************************************************************
+            // Se especifiquei um status, busco apenas os sistemas monitorados com aquele status
+            //********************************************************************************
+            if (searchFiltersMonitoredSystems.Status != null)
             {
-                //********************************************************************************
-                // Se o usuário informou um termo de busca
-                //********************************************************************************
-                if (!string.IsNullOrEmpty(searchFiltersMonitoredSystems.SearchTerm))
+                sql += " AND last_status = @Status";
+                parameters.Add("Status", searchFiltersMonitoredSystems.Status);
+            }
+
+            //********************************************************************************
+            // Se o usuário informou um termo de busca
+            //********************************************************************************
+            if (!string.IsNullOrEmpty(searchFiltersMonitoredSystems.SearchTerm))
+            {
+
+                sql += " AND (";
+                //*************************************************************************************************************
+                // Crio uma lista de termos, separando o termo de busca por espaço. Assim, se o usuário buscar por
+                // "Sistema de Pagamento", eu vou buscar por "Sistema", "de" e "Pagamento"
+                //*************************************************************************************************************
+                var terms = searchFiltersMonitoredSystems.SearchTerm.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+
+                // Índice para criar parâmetros únicos para cada termo
+                int tIndex = 0;
+
+                foreach (var item in terms)
                 {
-                    //*************************************************************************************************************
-                    // Crio uma lista de termos, separando o termo de busca por espaço. Assim, se o usuário buscar por
-                    // "Sistema de Pagamento", eu vou buscar por "Sistema", "de" e "Pagamento"
-                    //*************************************************************************************************************
-                    var terms = searchFiltersMonitoredSystems.SearchTerm.Split(" ", StringSplitOptions.RemoveEmptyEntries);
 
-                    // Índice para criar parâmetros únicos para cada termo
-                    int tIndex = 0;
+                    //*******************************************************************************************************************************
+                    // Cada iteração, eu adiciono uma condição na query para buscar o termo no nome, url ou descrição do sistema monitorado
+                    // e adiciono um parâmetro para o termo, usando o índice para garantir que cada parâmetro seja único
+                    //*******************************************************************************************************************************
+                    sql += $" (name ILIKE @Term{tIndex} OR url ILIKE @Term{tIndex} OR description ILIKE @Term{tIndex})";
 
-                    foreach (var item in terms)
-                    {
-                        //*******************************************************************************************************************************
-                        // Cada iteração, eu adiciono uma condição na query para buscar o termo no nome, url ou descrição do sistema monitorado
-                        // e adiciono um parâmetro para o termo, usando o índice para garantir que cada parâmetro seja único
-                        //*******************************************************************************************************************************
-                        sql += $" AND (name ILIKE @Term{tIndex} OR url ILIKE @Term{tIndex} OR description ILIKE @Term{tIndex})";
-                        parameters.Add($"Term{tIndex}", $"%{item}%");
-                        tIndex++;
-                    }
+                    if (terms.Last() != item)
+                        sql += "OR";
+
+                    parameters.Add($"Term{tIndex}", $"%{item}%");
+                    tIndex++;
                 }
+
+                sql += ")";
             }
         }
 
@@ -150,17 +166,90 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
         return result;
     }
 
+    public async Task<MonitoredSystem?> GetByUrl(string url, NpgsqlConnection? connectionAlreadyCreated = null)
+    {
+        string whereClause = $"url = @Url";
+
+        string sql = QueryBuilder.BuildSelectQuery(TABLE_NAME, whereClause);
+
+        NpgsqlConnection connection = connectionAlreadyCreated ?? await databaseService.CreateNewPgConnection();
+
+        var result = await connection.QueryFirstOrDefaultAsync<MonitoredSystem?>(sql, new { Url = url });
+
+        //********************************************************************************
+        // Caso eu tenha criado a conexão aqui, eu fecho ela
+        //********************************************************************************
+        if (connectionAlreadyCreated == null)
+            await connection.DisposeAsync();
+
+        return result;
+    }
+
+    /// <summary>
+    /// Recupera os sistemas monitorados que estão pendentes de verificação, ou seja, aqueles que ainda não foram 
+    /// verificados ou que estão com a última verificação feita há mais de X horas (dependendo da frequência 
+    /// de monitoramento configurada para cada sistema monitorado). <br/>
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public async Task<List<MonitoredSystem>> GetPending(NpgsqlConnection? connectionAlreadyCreated = null)
+    {
+        //********************************************************************************************
+        //SE O SISTEMA NUNCA FOI CHECADO, ENTÃO, A URL SERÁ RETORNADA PARA CHECAGEM. SE O SISTEMA FOI
+        //CHECADO, MAS O INTERVALO DESDE A ÚLTIMA CHECAGEM FOR MAIOR OU IGUAL A 15 MINUTOS, ENTÃO, O
+        //SISTEMA SERÁ RETORNADO PARA CHECAGEM.
+        //********************************************************************************************
+        string sql = $@"SELECT * FROM {TABLE_NAME} 
+                    WHERE last_checked_at IS NULL 
+                       OR last_checked_at <= (NOW() - (INTERVAL '1 minute' * 1))";
+
+        NpgsqlConnection connection = connectionAlreadyCreated ?? await databaseService.CreateNewPgConnection();
+
+        var result = await connection.QueryAsync<MonitoredSystem>(sql);
+
+        if (result == null)
+            return [];
+
+        //********************************************************************************
+        // Caso eu tenha criado a conexão aqui, eu fecho ela
+        //********************************************************************************
+        if (connectionAlreadyCreated == null)
+            await connection.DisposeAsync();
+
+        return [.. result];
+    }
+
     public async Task Update(MonitoredSystem monitoredSystem, NpgsqlConnection? connectionAlreadyCreated = null)
     {
-        List<string> ignoredAttr = [nameof(MonitoredSystem.Id)];
-
         string whereClause = $"id = @Id";
 
-        string sql = QueryBuilder.BuildUpdateQuery(monitoredSystem, ignoredAttr, TABLE_NAME, whereClause);
+        string sql = QueryBuilder.BuildUpdateQuery<MonitoredSystem>(TABLE_NAME, whereClause, monitoredSystem.GetIgnoreAttributes());
 
         NpgsqlConnection connection = connectionAlreadyCreated ?? await databaseService.CreateNewPgConnection();
 
         await connection.ExecuteAsync(sql, monitoredSystem);
+
+        //********************************************************************************
+        // Caso eu tenha criado a conexão aqui, eu fecho ela
+        //********************************************************************************
+        if (connectionAlreadyCreated == null)
+            await connection.DisposeAsync();
+    }
+
+    /// <summary>
+    /// Atualiza o status de um sistema monitorado
+    /// </summary>
+    /// <param name="update"></param>
+    /// <param name="connectionAlreadyCreated"></param>
+    /// <returns></returns>
+    public async Task UpdateStatus(UpdateMonitoredSystemStatusDTO update, NpgsqlConnection? connectionAlreadyCreated = null)
+    {
+        string sql = @"UPDATE monitored_systems SET last_checked_at = @LastCheckedAt, 
+                       last_status = @Status, updated_at = NOW(), history = history || @History WHERE id = @Id";
+
+        NpgsqlConnection connection = connectionAlreadyCreated ?? await databaseService.CreateNewPgConnection();
+
+        await connection.ExecuteAsync(sql, update);
 
         //********************************************************************************
         // Caso eu tenha criado a conexão aqui, eu fecho ela

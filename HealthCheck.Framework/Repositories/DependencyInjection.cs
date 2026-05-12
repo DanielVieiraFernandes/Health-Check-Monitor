@@ -1,4 +1,5 @@
 ﻿using HealthCheck.Framework.Repositories.MonitoredSystemRepository;
+using HealthCheck.Framework.Repositories.SystemChecksRepository;
 using HealthCheck.Framework.Repositories.UsersRepository;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,6 +15,7 @@ public static class DependencyInjection
 
         services.AddScoped<IMonitoredSystemRepository, MonitoredSystemRepository.MonitoredSystemRepository>();
         services.AddScoped<IUsersRepository, UsersRepository.UsersRepository>();
+        services.AddScoped<ISystemChecksRepository, SystemChecksRepository.SystemChecksRepository>();
     }
 
 }

@@ -96,14 +96,8 @@
                                 <MudDivider />
 
                                 <MudGrid>
-                                    <MudItem xs="6">
-                                        <MudStack Spacing="0">
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">Intervalo</MudText>
-                                            <MudText Typo="Typo.body1">@system.IntervalInMinutes min</MudText>
-                                        </MudStack>
-                                    </MudItem>
-                                    <MudItem xs="6">
-                                        <MudStack Spacing="0" AlignItems="AlignItems.End">
+                                    <MudItem xs="12">
+                                        <MudStack Spacing="0" AlignItems="AlignItems.Start">
                                             <MudText Typo="Typo.caption" Color="Color.Secondary">Última checagem</MudText>
                                             <MudText Typo="Typo.body1">@FormatDateTime(system.LastCheckedAt)</MudText>
                                         </MudStack>
@@ -189,6 +183,10 @@
         try
         {
             loadingState.Show("Carregando sistemas monitorados...");
+
+            // ATRIBUO O UserId DA SESSÃO ATUAL AOS FILTROS DE PESQUISA
+            searchFiltersMonitoredSystems.UserId = UserSession!.UserId;
+
             await LoadMonitoredSystemsData();
         }
         catch (Exception)
@@ -221,7 +219,7 @@
         {
             loadingState.Show("Carregando sistemas monitorados...");
 
-            var result = await monitoredSystemService.GetAllMonitoredSystems(searchFiltersMonitoredSystems, UserSession!.UserId);
+            var result = await monitoredSystemService.GetAllMonitoredSystems(searchFiltersMonitoredSystems);
 
             if (result.IsFailure)
             {
