@@ -1,7 +1,8 @@
-﻿using HealthCheck.Framework.Services.Database;
+﻿using HealthCheck.Framework.Services.Cryptography;
+using HealthCheck.Framework.Services.Database;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService;
+using HealthCheck.Framework.Services.Database.SystemChecksService;
 using HealthCheck.Framework.Services.Database.UsersService;
-using HealthCheck.Framework.Services.Cryptography;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,6 +11,12 @@ namespace HealthCheck.Framework.Services;
 public static class DependencyInjection
 {
     public static void AddServices(this IServiceCollection services, IConfiguration configuration)
+    {
+        AddDatabaseServices(services, configuration);
+        AddCryptographyServices(services);
+    }
+
+    private static void AddDatabaseServices(IServiceCollection services, IConfiguration configuration)
     {
         //****************************************************************************************************
         // RECUPERA A STRING DE CONEXÃO DO POSTGRESQL DO ARQUIVO DE CONFIGURAÇÃO
@@ -28,11 +35,13 @@ public static class DependencyInjection
         //****************************************************************************************************
         services.AddScoped(c => new DatabaseService(pgConnectionString));
 
-        //****************************************************************************************************
-        // SERVIÇOS
-        //****************************************************************************************************
         services.AddScoped<MonitoredSystemService>();
         services.AddScoped<UsersService>();
+        services.AddScoped<SystemChecksService>();
+    }
+
+    private static void AddCryptographyServices(IServiceCollection services)
+    {
         services.AddScoped<IPasswordEncrypter, BcryptPasswordEncrypter>();
     }
 

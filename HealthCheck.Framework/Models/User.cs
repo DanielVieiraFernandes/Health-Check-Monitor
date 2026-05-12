@@ -1,6 +1,6 @@
 ﻿namespace HealthCheck.Framework.Models;
 
-public class User
+public class User : UtilsForModels
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
@@ -9,4 +9,6 @@ public class User
     public string History { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
+
+    protected override List<string> ignoreAttributes => throw new NotImplementedException();
 }

@@ -23,42 +23,24 @@ public class ServicesResources
         if (type1 != type2)
             throw new ArgumentException("Os objetos devem ser do mesmo tipo.");
 
-        var propertiesObj1 = type1.GetProperties();
-        var propertiesObj2 = type2.GetProperties();
+        var propertiesObj = type1.GetProperties()
+            .Where(p => ignoreAttr != null ? !ignoreAttr.Contains(p.Name) || p.Name.Equals("History", StringComparison.InvariantCultureIgnoreCase) : true);
 
         List<string> differences = new();
 
-        foreach (var prop1 in propertiesObj1)
+        foreach (var prop in propertiesObj)
         {
-            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-            // Verifica se a propriedade atual está na lista de propriedades a serem ignoradas.
-            // Se estiver, pula para a próxima propriedade.
-            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-            if (ignoreAttr != null && ignoreAttr.Contains(prop1.Name))
-                continue;
-
-            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-            // Tento encontrar a propriedade correspondente no segundo objeto com base no nome da propriedade do primeiro objeto.
-            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-            var prop2 = propertiesObj2.FirstOrDefault(p => p.Name == prop1.Name);
-
-            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-            // Se não encontrar a propriedade, pula para a próxima.
-            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-            if (prop2 == null)
-                continue;
-
             //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             // Recupero o valor das duas propriedades
             //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-            var value1 = prop1.GetValue(obj1);
-            var value2 = prop2.GetValue(obj2);
+            var value1 = prop.GetValue(obj1);
+            var value2 = prop.GetValue(obj2);
 
             //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             // Comparo os valores. Se forem diferentes, adiciono uma string formatada à lista de diferenças.
             //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             if (!Equals(value1, value2))
-                differences.Add($"Propriedade '{prop1.Name}' alterada de '{value2 ?? "null"}' para '{value1 ?? "null"}'.");
+                differences.Add($"Propriedade '{prop.Name}' alterada de '{value2 ?? "null"}' para '{value1 ?? "null"}'.");
         }
 
         return string.Join(Environment.NewLine, differences);

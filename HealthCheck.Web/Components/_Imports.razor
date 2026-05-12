@@ -1,5 +1,6 @@
 ﻿@using System.Net.Http
 @using System.Net.Http.Json
+@using HealthCheck.Framework.Services.Database.SystemChecksService
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
 @using Microsoft.AspNetCore.Components.Web
@@ -35,3 +36,4 @@
 @* Injeção de dependência dos serviços *@
 
 @inject MonitoredSystemService monitoredSystemService
+@inject SystemChecksService systemCheckService
