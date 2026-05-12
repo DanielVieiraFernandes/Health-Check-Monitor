@@ -1,4 +1,5 @@
 ﻿using HealthCheck.Framework.Enums;
+using HealthCheck.Framework.Models;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService.DTOS;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService.Validators;
 using System.Net;
@@ -34,6 +35,7 @@ public class MonitoringServices
     {
         try
         {
+
             //Crie um escopo para serviços Scoped (ex.: repositórios/serviços de banco).
             using var scope = _scopeFactory.CreateScope();
             var monitoredSystemService = scope.ServiceProvider
@@ -59,6 +61,7 @@ public class MonitoringServices
                 return;
             }
 
+
             //Paralelismo controlado para evitar sobrecarga (10 requisições simultâneas).
             var semaphore = new SemaphoreSlim(10);
 
@@ -66,6 +69,12 @@ public class MonitoringServices
             var tasks = pendentes.Select(async monitoredSystem =>
             {
                 await semaphore.WaitAsync(stoppingToken);
+
+                SystemCheck systemCheck = new()
+                {
+                    UserId = monitoredSystem.UserId,
+                    SystemId = monitoredSystem.Id,
+                };
 
                 HealthStatus currentStatus = monitoredSystem.LastStatus;
 
@@ -81,6 +90,12 @@ public class MonitoringServices
                     {
                         currentStatus = HealthStatus.Unknown;
                         _logger.LogWarning("URL bloqueada para verificação. SistemaId: {SystemId}, Url: {Url}, Motivo: Não passou na validação de destinos seguros", monitoredSystem.Id, monitoredSystem.Url);
+
+                        systemCheck.Status = currentStatus;
+                        systemCheck.Message = $"A URL: \"{monitoredSystem.Url}\" foi bloqueada para verificação. Não passou na validação de destinos seguros.";
+
+
+
                         return;
                     }
 

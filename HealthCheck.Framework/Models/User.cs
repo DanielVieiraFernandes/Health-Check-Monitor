@@ -1,6 +1,6 @@
 ﻿namespace HealthCheck.Framework.Models;
 
-public class User
+public class User : UtilsForModels
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;

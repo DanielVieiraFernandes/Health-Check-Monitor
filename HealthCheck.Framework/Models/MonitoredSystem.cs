@@ -2,7 +2,7 @@
 
 namespace HealthCheck.Framework.Models;
 
-public class MonitoredSystem
+public sealed class MonitoredSystem : UtilsForModels
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
@@ -19,26 +19,12 @@ public class MonitoredSystem
     // ATRIBUTOS UTILITÁRIOS PARA VALIDAÇÕES E CONSTRUIR QUERIES DINÂMICAS
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-    #region Atributos utilitários para validação de campos e construção de queries dinâmicas
-
-    private List<string> _ignoreAttributes = [nameof(MonitoredSystem.UpdatedAt),
-                                             nameof(MonitoredSystem.Id),
-                                             nameof(MonitoredSystem.UserId),
-                                             nameof(MonitoredSystem.LastCheckedAt),
-                                             nameof(MonitoredSystem.LastStatus)];
-
-    public List<string> GetIgnoreAttributes() => _ignoreAttributes;
-
-    public void AddIgnoreAttribute(string attributeName)
-    {
-        if (!_ignoreAttributes.Contains(attributeName))
-            _ignoreAttributes.Add(attributeName);
-    }
-    public void RemoveIgnoreAttribute(string attributeName)
-    {
-        if (_ignoreAttributes.Contains(attributeName))
-            _ignoreAttributes.Remove(attributeName);
-    }
-
-    #endregion Atributos utilitários para validação de campos e construção de queries dinâmicas
+    protected override List<string> ignoreAttributes { get; } =
+    [
+        nameof(MonitoredSystem.UpdatedAt),
+        nameof(MonitoredSystem.Id),
+        nameof(MonitoredSystem.UserId),
+        nameof(MonitoredSystem.LastCheckedAt),
+        nameof(MonitoredSystem.LastStatus)
+    ];
 }
