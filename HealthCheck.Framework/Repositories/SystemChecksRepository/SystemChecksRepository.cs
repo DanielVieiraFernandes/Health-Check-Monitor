@@ -54,7 +54,7 @@ public class SystemChecksRepository(DatabaseService databaseService) : ISystemCh
         if (connection == null)
             throw new Exception("Falha ao criar conexão com o banco de dados.");
 
-        string whereClause = "user_id = @UserId";
+        string whereClause = "user_id = @UserId AND checked_at BETWEEN (NOW() - INTERVAL '1 day') AND NOW() ORDER BY checked_at ASC LIMIT 1441";
 
         string sql = QueryBuilder.BuildSelectQuery(TABLE_NAME, whereClause);
 

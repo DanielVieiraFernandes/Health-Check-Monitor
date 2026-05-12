@@ -9,4 +9,6 @@ public class User : UtilsForModels
     public string History { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
+
+    protected override List<string> ignoreAttributes => throw new NotImplementedException();
 }

@@ -1,6 +1,8 @@
 ﻿using HealthCheck.Framework.Repositories.MonitoredSystemRepository;
+using HealthCheck.Framework.Repositories.SystemChecksRepository;
 using HealthCheck.Framework.Services.Database;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService;
+using HealthCheck.Framework.Services.Database.SystemChecksService;
 using HealthCheck.Worker.Services;
 using Serilog;
 
@@ -33,6 +35,7 @@ public static class DependencyInjection
 
         services.AddScoped(config => new DatabaseService(connectionString));
         services.AddScoped<MonitoredSystemService>();
+        services.AddScoped<SystemChecksService>();
     }
 
     private static void AddRepositories(IServiceCollection services)
@@ -41,5 +44,6 @@ public static class DependencyInjection
         Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
         services.AddScoped<IMonitoredSystemRepository, MonitoredSystemRepository>();
+        services.AddScoped<ISystemChecksRepository, SystemChecksRepository>();
     }
 }

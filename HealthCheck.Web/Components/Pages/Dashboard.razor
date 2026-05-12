@@ -20,7 +20,7 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Sistemas ativos</MudText>
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                         <MudIcon Icon="@Icons.Material.Filled.Dns" Color="Color.Success" Size="Size.Large" />
-                        <MudText Typo="Typo.h5" Class="font-weight-bold">--</MudText>
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">@activeSystems</MudText>
                     </MudStack>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Resumo do status atual</MudText>
                 </MudStack>
@@ -32,7 +32,7 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Alertas críticos</MudText>
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                         <MudIcon Icon="@Icons.Material.Filled.Report" Color="Color.Error" Size="Size.Large" />
-                        <MudText Typo="Typo.h5" Class="font-weight-bold">--</MudText>
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">@criticalAlerts</MudText>
                     </MudStack>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Acompanhe incidentes</MudText>
                 </MudStack>
@@ -44,7 +44,7 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Latência média</MudText>
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                         <MudIcon Icon="@Icons.Material.Filled.Speed" Color="Color.Info" Size="Size.Large" />
-                        <MudText Typo="Typo.h5" Class="font-weight-bold">--</MudText>
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">@mediumLatency ms</MudText>
                     </MudStack>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Últimas 24h</MudText>
                 </MudStack>
@@ -56,7 +56,7 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Disponibilidade</MudText>
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                         <MudIcon Icon="@Icons.Material.Filled.Timeline" Color="Color.Warning" Size="Size.Large" />
-                        <MudText Typo="Typo.h5" Class="font-weight-bold">--</MudText>
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">@availability.ToString("F2")%</MudText>
                     </MudStack>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Visão geral semanal</MudText>
                 </MudStack>
@@ -102,3 +102,76 @@
         </MudItem>
     </MudGrid>
 </div>
+
+@code {
+    [CascadingParameter(Name = "UserSession")]
+    public UserSessionInfo? UserSession { get; set; }
+
+    List<SystemCheck> systemChecks { get; set; } = [];
+
+    long mediumLatency { get; set; } 
+    long criticalAlerts { get; set; } 
+    long activeSystems { get; set; } 
+    decimal availability { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        loadingState.OnChange += HandleLoadingStateChanged;
+
+        try
+        {
+            loadingState.Show("Carregando informações...");
+
+            await LoadDashboardInfo();
+        }
+        catch (Exception)
+        {
+            snackbar.Add("Ocorreu um erro ao carregar as informações do dashboard", Severity.Error);
+            throw;
+        }
+        finally
+        {
+            loadingState.Hide();
+        }
+    }
+
+    private async Task LoadDashboardInfo()
+    {
+        loadingState.Show("Carregando informações...");
+
+        try
+        {
+            var result = await systemCheckService.GetAllChecksByUser(UserSession!.UserId);
+
+            if(result.IsFailure)
+            {
+                snackbar.Add("Ocorreu um erro ao carregar as informações do dashboard", Severity.Error);
+                return;
+            }
+
+            systemChecks = result.Success!;
+
+            mediumLatency = (long)systemChecks.Sum(s => s.LatencyMs) / systemChecks.Count;
+            criticalAlerts = systemChecks.DistinctBy(s => s.SystemId).Count(s => s.Status != HealthStatus.Healthy);
+            activeSystems = systemChecks.DistinctBy(s => s.SystemId).Count(s => s.Status == HealthStatus.Healthy);
+            availability = (decimal)(activeSystems) / systemChecks.DistinctBy(s => s.SystemId).Count() * 100;
+        }
+        catch (Exception)
+        {
+            snackbar.Add("Ocorreu um erro ao carregar as informações do dashboard", Severity.Error);
+            throw;
+        }
+        finally
+        {
+            loadingState.Hide();
+        }
+    }
+
+
+    private void HandleLoadingStateChanged()
+    {
+        InvokeAsync(StateHasChanged); 
+    }
+
+
+}

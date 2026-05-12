@@ -8,7 +8,7 @@ public class SystemCheck : UtilsForModels
     public Guid UserId { get; set; }
     public Guid SystemId { get; set; }
     public HealthStatus Status { get; set; }
-    public int LatencyMS { get; set; }
+    public long LatencyMs { get; set; }
     public DateTime CheckedAt { get; set; } = DateTime.Now;
     public string? Message { get; set; }
     public string? ExceptionType { get; set; }

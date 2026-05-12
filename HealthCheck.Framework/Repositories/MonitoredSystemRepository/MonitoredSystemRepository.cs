@@ -192,7 +192,7 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
         //********************************************************************************************
         string sql = $@"SELECT * FROM {TABLE_NAME} 
                     WHERE last_checked_at IS NULL 
-                       OR last_checked_at <= (NOW() - (INTERVAL '1 minute' * 15))";
+                       OR last_checked_at <= (NOW() - (INTERVAL '1 minute' * 1))";
 
         NpgsqlConnection connection = connectionAlreadyCreated ?? await databaseService.CreateNewPgConnection();
 

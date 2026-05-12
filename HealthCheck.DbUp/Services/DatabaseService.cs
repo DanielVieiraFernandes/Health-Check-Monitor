@@ -157,7 +157,7 @@ public class DatabaseService(NpgsqlConnection connection)
             sql.Append("user_id UUID REFERENCES users(id) ON DELETE CASCADE, ");
             sql.Append("system_id UUID REFERENCES monitored_systems(id) ON DELETE CASCADE, ");
             sql.Append("status INT NOT NULL, ");
-            sql.Append("latency_ms INT NOT NULL, ");
+            sql.Append("latency_ms BIGINT NOT NULL, ");
             sql.Append("checked_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),");
 
             //******************************************************************************************************************
