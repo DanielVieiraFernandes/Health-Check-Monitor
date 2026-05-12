@@ -1,4 +1,6 @@
 @page "/dashboard"
+@using HealthCheck.Framework.Services.Database.MonitoredSystemService.Filters
+@using HealthCheck.Web.Components.Shared.UIModels
 @attribute [Authorize]
 
 <PageTitle>Dashboard</PageTitle>
@@ -10,6 +12,10 @@
                 <MudText Typo="Typo.h4" Class="font-weight-bold">Dashboard</MudText>
                 <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Visão geral rápida para acompanhar o ambiente.</MudText>
             </MudStack>
+            <MudStack Spacing="0" AlignItems="AlignItems.End">
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Atualizado em</MudText>
+                <MudText Typo="Typo.subtitle2" Class="font-weight-bold">@currentTime</MudText>
+            </MudStack>
         </MudStack>
     </MudPaper>
 
@@ -20,7 +26,7 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Sistemas ativos</MudText>
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                         <MudIcon Icon="@Icons.Material.Filled.Dns" Color="Color.Success" Size="Size.Large" />
-                        <MudText Typo="Typo.h5" Class="font-weight-bold">@activeSystems</MudText>
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">@dashboardInfoUI?.ActiveSystems</MudText>
                     </MudStack>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Resumo do status atual</MudText>
                 </MudStack>
@@ -32,7 +38,7 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Alertas críticos</MudText>
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                         <MudIcon Icon="@Icons.Material.Filled.Report" Color="Color.Error" Size="Size.Large" />
-                        <MudText Typo="Typo.h5" Class="font-weight-bold">@criticalAlerts</MudText>
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">@dashboardInfoUI?.CriticalAlerts</MudText>
                     </MudStack>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Acompanhe incidentes</MudText>
                 </MudStack>
@@ -44,7 +50,7 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Latência média</MudText>
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                         <MudIcon Icon="@Icons.Material.Filled.Speed" Color="Color.Info" Size="Size.Large" />
-                        <MudText Typo="Typo.h5" Class="font-weight-bold">@mediumLatency ms</MudText>
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">@dashboardInfoUI?.MediumLatency ms</MudText>
                     </MudStack>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Últimas 24h</MudText>
                 </MudStack>
@@ -56,7 +62,7 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Disponibilidade</MudText>
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                         <MudIcon Icon="@Icons.Material.Filled.Timeline" Color="Color.Warning" Size="Size.Large" />
-                        <MudText Typo="Typo.h5" Class="font-weight-bold">@availability.ToString("F2")%</MudText>
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">@dashboardInfoUI?.Availability.ToString("F2") %</MudText>
                     </MudStack>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Visão geral semanal</MudText>
                 </MudStack>
@@ -107,12 +113,14 @@
     [CascadingParameter(Name = "UserSession")]
     public UserSessionInfo? UserSession { get; set; }
 
-    List<SystemCheck> systemChecks { get; set; } = [];
+    DashboardInfoUI? dashboardInfoUI { get; set; } = null;
+    SearchFiltersMonitoredSystems searchFiltersMonitoredSystems { get; set; } = new();
 
-    long mediumLatency { get; set; } 
-    long criticalAlerts { get; set; } 
-    long activeSystems { get; set; } 
-    decimal availability { get; set; }
+    //Crio um timer para atualizar as informações do dashboard a cada minuto, garantindo que os dados
+    //esteja sempre atualizados para o usuário.
+    string currentTime = DateTime.Now.ToLongTimeString();
+    PeriodicTimer timer = new(TimeSpan.FromMinutes(1));
+    CancellationTokenSource cts = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -120,9 +128,16 @@
 
         try
         {
-            loadingState.Show("Carregando informações...");
+            loadingState.Show("Carregando...");
 
+            searchFiltersMonitoredSystems.UserId = UserSession!.UserId;
+
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            //Atualiza as informações do dashboard pela primeira vez, antes de inicar o timer
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             await LoadDashboardInfo();
+
+            _ = RunTimer();
         }
         catch (Exception)
         {
@@ -137,11 +152,26 @@
 
     private async Task LoadDashboardInfo()
     {
-        loadingState.Show("Carregando informações...");
 
         try
         {
-            var result = await systemCheckService.GetAllChecksByUser(UserSession!.UserId);
+            //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            //Busco todos os dados necessários para montar o dashboard:
+            // - Sistemas monitorados
+            // - Checagens de sistemas
+            //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+            var systemsResult = await monitoredSystemService.GetAllMonitoredSystems(searchFiltersMonitoredSystems);
+
+            if(systemsResult.IsFailure)
+            {
+                snackbar.Add("Ocorreu um erro ao carregar as informações do dashboard", Severity.Error);
+                return;
+            }
+
+            var systems = systemsResult.Success!;
+
+            var result = await systemCheckService.GetAllChecksByUser(UserSession!.UserId, last24Hours: true);
 
             if(result.IsFailure)
             {
@@ -149,29 +179,70 @@
                 return;
             }
 
-            systemChecks = result.Success!;
+            var systemChecks = result.Success!;
 
-            mediumLatency = (long)systemChecks.Sum(s => s.LatencyMs) / systemChecks.Count;
-            criticalAlerts = systemChecks.DistinctBy(s => s.SystemId).Count(s => s.Status != HealthStatus.Healthy);
-            activeSystems = systemChecks.DistinctBy(s => s.SystemId).Count(s => s.Status == HealthStatus.Healthy);
-            availability = (decimal)(activeSystems) / systemChecks.DistinctBy(s => s.SystemId).Count() * 100;
+            //Somente se todas as informações forem carregadas, instancio o objeto que será usado para popular o dashboard.
+
+            dashboardInfoUI = new();
+
+            dashboardInfoUI.ActiveSystems = systems.Count(s => s.LastStatus == HealthStatus.Healthy);
+            dashboardInfoUI.CriticalAlerts = systems.Count(s => s.LastStatus != HealthStatus.Healthy);
+            dashboardInfoUI.Availability = ((decimal)dashboardInfoUI.ActiveSystems / systems.Count()) * 100;
+            dashboardInfoUI.MediumLatency = (int)systemChecks.Sum(sc => sc.LatencyMs) / systemChecks.Count();
+
         }
         catch (Exception)
         {
             snackbar.Add("Ocorreu um erro ao carregar as informações do dashboard", Severity.Error);
             throw;
         }
-        finally
-        {
-            loadingState.Hide();
-        }
     }
-
 
     private void HandleLoadingStateChanged()
     {
         InvokeAsync(StateHasChanged); 
     }
 
+    private async Task RunTimer()
+    {
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cts.Token))
+            {
+                //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //Atualizo a hora atual para exibir no dashboard, dando um feedback visual
+                //para o usuário de que as informações foram atualizadas.
+                //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                currentTime = DateTime.Now.ToLongTimeString();
+
+                //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //Atualiza as informações do dashboard
+                //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                await LoadDashboardInfo();
+
+                //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //Após a rotina do timer, chamo o StateHasChanged para garantir que o componente seja atualizado.
+                //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        //Caso o componente seja descartado, cancelo o timer para evitar que ele continue tentando atualizar o dashboard.
+        catch (OperationCanceledException)
+        {
+            snackbar.Add("Atualização do dashboard interrompida.", Severity.Info);
+        }
+        //Caso ocorra qualquer outro erro durante a atualização do dashboard, exibo uma mensagem de erro para o usuário.
+        catch (Exception ex)
+        {
+            snackbar.Add($"Ocorreu um erro ao atualizar o dashboard: {ex.Message}", Severity.Error);
+            throw;
+        }
+    }
+    
+    public void Dispose()
+    {
+        cts.Cancel();
+        timer.Dispose();
+    }
 
 }

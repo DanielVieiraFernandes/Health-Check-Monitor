@@ -19,9 +19,9 @@ public class SystemChecksService(ISystemChecksRepository systemChecksRepository)
     //    return Result<object>.AsSuccess(new { });
     //}
 
-    public async Task<Result<List<SystemCheck>>> GetAllChecksByUser(Guid userId)
+    public async Task<Result<List<SystemCheck>>> GetAllChecksByUser(Guid userId, bool last24Hours = false)
     {
-        var systemChecks = await systemChecksRepository.GetAll(userId);
+        var systemChecks = await systemChecksRepository.GetAll(userId, last24Hours);
 
         return Result<List<SystemCheck>>.AsSuccess(systemChecks);
     }

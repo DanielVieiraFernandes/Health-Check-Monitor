@@ -47,14 +47,21 @@ public class SystemChecksRepository(DatabaseService databaseService) : ISystemCh
     //        throw new Exception($"Nenhum registro encontrado para o id: {id}");
     //}
 
-    public async Task<List<SystemCheck>> GetAll(Guid userId, NpgsqlConnection? connectionnAlreadyCreated = null)
+    public async Task<List<SystemCheck>> GetAll(Guid userId, bool last24Hours, NpgsqlConnection? connectionnAlreadyCreated = null)
     {
         var connection = connectionnAlreadyCreated ?? await databaseService.CreateNewPgConnection();
 
         if (connection == null)
             throw new Exception("Falha ao criar conexão com o banco de dados.");
 
-        string whereClause = "user_id = @UserId AND checked_at BETWEEN (NOW() - INTERVAL '1 day') AND NOW() ORDER BY checked_at ASC LIMIT 1441";
+        string whereClause = "user_id = @UserId";
+
+        //================================================================================================================================
+        //Caso queira apenas os registros das últimas 24 horas, adiciona a condição na query limitando a quantidade
+        //de registros a 1441, que é o número máximo de registros que devem ser gerados nesse período
+        //================================================================================================================================
+        if (last24Hours)
+            whereClause += " AND checked_at BETWEEN(NOW() - INTERVAL '1 day') AND NOW() ORDER BY checked_at ASC LIMIT 1441";
 
         string sql = QueryBuilder.BuildSelectQuery(TABLE_NAME, whereClause);
 

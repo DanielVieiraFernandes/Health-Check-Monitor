@@ -84,6 +84,15 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
             }
 
             //********************************************************************************
+            // Se especifiquei um status, busco apenas os sistemas monitorados com aquele status
+            //********************************************************************************
+            if (searchFiltersMonitoredSystems.Status != null)
+            {
+                sql += " AND last_status = @Status";
+                parameters.Add("Status", searchFiltersMonitoredSystems.Status);
+            }
+
+            //********************************************************************************
             // Se o usuário informou um termo de busca
             //********************************************************************************
             if (!string.IsNullOrEmpty(searchFiltersMonitoredSystems.SearchTerm))
