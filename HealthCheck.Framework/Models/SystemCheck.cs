@@ -14,9 +14,12 @@ public class SystemCheck : UtilsForModels
     public string? ExceptionType { get; set; }
     public string? StackTrace { get; set; }
 
+    public string SystemName { get; set; } = string.Empty;
+
     protected override List<string> ignoreAttributes { get; } =
     [
         nameof(SystemCheck.Id),
-        nameof(SystemCheck.CheckedAt)
+        nameof(SystemCheck.CheckedAt),
+        nameof(SystemCheck.SystemName)
     ];
 }
