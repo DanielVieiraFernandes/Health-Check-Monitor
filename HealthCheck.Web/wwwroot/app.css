@@ -10,6 +10,10 @@ body {
     transition: background-color .25s ease, color .25s ease;
 }
 
+body.dialog-scroll-lock {
+    overflow: hidden;
+}
+
 a, .btn-link {
     color: #4338ca;
     text-decoration: none;

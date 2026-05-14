@@ -126,7 +126,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        loadingState.OnChange += HandleLoadingStateChanged;
+        loadingState.OnChange += () => InvokeAsync(StateHasChanged);
 
         try
         {
@@ -163,7 +163,6 @@
             // - Sistemas monitorados
             // - Checagens de sistemas
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
             var systemsResult = await monitoredSystemService.GetAllMonitoredSystems(searchFiltersMonitoredSystems);
 
             if(systemsResult.IsFailure)
@@ -190,20 +189,14 @@
 
             dashboardInfoUI.ActiveSystems = systems.Count(s => s.LastStatus == HealthStatus.Healthy);
             dashboardInfoUI.CriticalAlerts = systems.Count(s => s.LastStatus != HealthStatus.Healthy);
-            dashboardInfoUI.Availability = ((decimal)dashboardInfoUI.ActiveSystems / systems.Count()) * 100;
-            dashboardInfoUI.MediumLatency = (int)systemChecks.Where(s => s.LatencyMs > 0).Average(s => s.LatencyMs);
-
+            dashboardInfoUI.Availability = systems.Count > 0 ? ((decimal)dashboardInfoUI.ActiveSystems / systems.Count) * 100 : 0;
+            dashboardInfoUI.MediumLatency = systemChecks.Count > 0 ? (int)systemChecks.Where(s => s.LatencyMs > 0).Average(s => s.LatencyMs) : 0;
         }
         catch (Exception)
         {
             snackbar.Add("Ocorreu um erro ao carregar as informações do dashboard", Severity.Error);
             throw;
         }
-    }
-
-    private void HandleLoadingStateChanged()
-    {
-        InvokeAsync(StateHasChanged); 
     }
 
     private async Task RunTimer()

@@ -6,6 +6,8 @@ public class SearchSystemChecksFilter
 {
     public Guid UserId { get; set; }
 
+    public string? SearchTerm { get; set; }
+
     //***************************************************************************************************************************************
     //Sempre que o usuário não informar o período de consulta das checagens, o sistema deve considerar as últimas 24 horas
     //como período padrão para a consulta. Nunca irei retornar todas as checagens do usuário sem um parâmetro para o período definido.

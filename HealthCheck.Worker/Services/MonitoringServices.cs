@@ -36,7 +36,6 @@ public class MonitoringServices
     {
         try
         {
-
             //Crie um escopo para serviços Scoped (ex.: repositórios/serviços de banco).
             using var scope = _scopeFactory.CreateScope();
             var monitoredSystemService = scope.ServiceProvider
@@ -99,7 +98,7 @@ public class MonitoringServices
                         currentStatus = HealthStatus.Unknown;
                         _logger.LogWarning("URL bloqueada para verificação. SistemaId: {SystemId}, Url: {Url}, Motivo: Não passou na validação de destinos seguros", monitoredSystem.Id, monitoredSystem.Url);
 
-                        systemCheck.Message = $"A URL: \"{monitoredSystem.Url}\" foi bloqueada para verificação. Não passou na validação de destinos seguros.";
+                        systemCheck.ErrorMessage = $"A URL: \"{monitoredSystem.Url}\" foi bloqueada para verificação. Não passou na validação de destinos seguros.";
                         return;
                     }
 
@@ -119,7 +118,12 @@ public class MonitoringServices
                     //Atualizo o status do sistema monitorado com base no código de resposta.
                     currentStatus = response.StatusCode == HttpStatusCode.OK ? HealthStatus.Healthy : HealthStatus.Unhealthy;
 
-                    //Registro a latência da resposta, caso o header "X-Response-Time" esteja presente e seja um valor inteiro válido.
+                    //Caso tenha uma resposta no body da requisição, registro ela no campo response para a auditoria
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    if (!string.IsNullOrEmpty(responseBody))
+                        systemCheck.SystemResponse = responseBody;
+
+                    //Registro a latência da resposta
                     systemCheck.LatencyMs = stopwatch.ElapsedMilliseconds;
                 }
                 catch (Exception ex)
@@ -132,8 +136,8 @@ public class MonitoringServices
                     currentStatus = HealthStatus.Unknown;
                     _logger.LogWarning(ex, "Falha ao processar a URL pendente. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
 
-                    systemCheck.Message = $"Falha ao processar a URL: \"{monitoredSystem.Url}\". Motivo: {ex.Message}";
-                    systemCheck.ExceptionType = ex.GetType().ToString();
+                    systemCheck.ErrorMessage = $"Falha ao processar a URL: \"{monitoredSystem.Url}\". Motivo: {ex.Message}";
+                    systemCheck.ExceptionType = GetExceptionName(ex, stoppingToken);
                     systemCheck.StackTrace = ex.StackTrace;
                 }
                 finally
@@ -198,6 +202,16 @@ public class MonitoringServices
         {
             _logger.LogError(ex, "Falha ao processar URLs pendentes no worker.");
         }
+    }
+
+    private static string GetExceptionName(Exception ex, CancellationToken stoppingToken)
+    {
+        if (ex is TaskCanceledException && !stoppingToken.IsCancellationRequested)
+        {
+            return nameof(TimeoutException);
+        }
+
+        return ex.GetType().Name;
     }
 }
 

@@ -1,0 +1,152 @@
+@using HealthCheck.Framework.Models
+@using HealthCheck.Framework.Enums
+
+<div class="audit-check-dialog">
+    @if (check is null)
+    {
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Registro não encontrado.</MudText>
+    }
+    else
+    {
+        <MudStack Spacing="3">
+            <MudPaper Class="audit-check-card pa-4" Elevation="0">
+                <MudStack Spacing="2">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Color="Color.Primary" />
+                        <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Resumo da checagem</MudText>
+                    </MudStack>
+                    <MudGrid Class="audit-check-grid">
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Sistema</MudText>
+                            <MudText Typo="Typo.body1">@GetValue(check.SystemName)</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Status</MudText>
+                            <MudChip T="string" Label="true" Variant="Variant.Filled" Color="@GetStatusColor(check.Status)" Class="audit-status-chip">
+                                @check.Status.GetDescription()
+                            </MudChip>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Checado em</MudText>
+                            <MudText Typo="Typo.body1">@FormatDateTime(check.CheckedAt)</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Latência</MudText>
+                            <MudText Typo="Typo.body1">@check.LatencyMs ms</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Identificador</MudText>
+                            <MudText Typo="Typo.body1">@check.Id</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Sistema monitorado</MudText>
+                            <MudText Typo="Typo.body1">@check.SystemId</MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudStack>
+            </MudPaper>
+
+            @if (!string.IsNullOrWhiteSpace(check.ErrorMessage))
+            {
+                <MudPaper Class="audit-check-card audit-message-card pa-4" Elevation="0">
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Filled.MarkChatUnread" Color="Color.Info" />
+                            <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Mensagem de erro</MudText>
+                        </MudStack>
+                        <MudText Typo="Typo.body1" Class="audit-check-message">@GetValue(check.ErrorMessage)</MudText>
+                    </MudStack>
+                </MudPaper>
+            }
+
+            @if (!string.IsNullOrWhiteSpace(check.SystemResponse))
+            {
+                <MudPaper Class="audit-check-card audit-message-card pa-4" Elevation="0">
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Filled.DataObject" Color="Color.Primary" />
+                            <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Resposta do sistema</MudText>
+                        </MudStack>
+                        <MudText Typo="Typo.body1" Class="audit-check-message">@GetValue(check.SystemResponse)</MudText>
+                    </MudStack>
+                </MudPaper>
+            }
+
+            @if (!string.IsNullOrEmpty(check.ExceptionType) || !string.IsNullOrEmpty(check.StackTrace))
+            {
+                <MudPaper Class="audit-check-card audit-exception-card pa-4" Elevation="0">
+                    <MudStack Spacing="2">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Color="Color.Error" />
+                            <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Exceção</MudText>
+                        </MudStack>
+                        <MudText Typo="Typo.subtitle2" Class="audit-exception-type">@GetValue(check.ExceptionType)</MudText>
+                        <MudDivider />
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Stack trace</MudText>
+                        <MudPaper Class="audit-stacktrace pa-3" Elevation="0">
+                            @if (formattedStackTrace.Count == 0)
+                            {
+                                <MudText Typo="Typo.body2" Class="text-prewrap">Nenhum detalhe adicional foi informado.</MudText>
+                            }
+                            else
+                            {
+                                <MudList T="string" Dense="true">
+                                    @foreach (var line in formattedStackTrace)
+                                    {
+                                        <MudListItem T="string" Class="audit-stacktrace-line">
+                                            <MudText Typo="Typo.caption" Class="text-prewrap">@line</MudText>
+                                        </MudListItem>
+                                    }
+                                </MudList>
+                            }
+                        </MudPaper>
+                    </MudStack>
+                </MudPaper>
+            }
+        </MudStack>
+    }
+</div>
+
+@code {
+    [Parameter] public SystemCheck? SystemCheck { get; set; }
+
+    private SystemCheck? check;
+
+    private readonly List<string> formattedStackTrace = [];
+
+    protected override void OnInitialized()
+    {
+        check = SystemCheck;
+        BuildStackTrace();
+    }
+
+    private void BuildStackTrace()
+    {
+        formattedStackTrace.Clear();
+
+        if (check is null || string.IsNullOrWhiteSpace(check.StackTrace))
+        {
+            return;
+        }
+
+        foreach (var line in check.StackTrace.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            formattedStackTrace.Add(line);
+        }
+    }
+
+    private static string GetValue(string? value)
+        => string.IsNullOrWhiteSpace(value) ? "Não informado" : value;
+
+    private static string FormatDateTime(DateTime value)
+        => value <= DateTime.MinValue.AddDays(1) ? "Não informado" : value.ToString("dd/MM/yyyy HH:mm");
+
+    private static Color GetStatusColor(HealthStatus status)
+        => status switch
+        {
+            HealthStatus.Healthy => Color.Success,
+            HealthStatus.Unknown => Color.Warning,
+            HealthStatus.Unhealthy => Color.Error,
+            _ => Color.Default
+        };
+}

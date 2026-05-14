@@ -1,5 +1,6 @@
 @page "/auditoria"
 @using HealthCheck.Framework.Services.Database.SystemChecksService.Filters
+@using Syncfusion.Blazor.Navigations
 @attribute [Authorize]
 
 <PageTitle>Auditoria</PageTitle>
@@ -19,15 +20,20 @@
             </MudStack>
             <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="audit-search-bar">
                 <MudTextField T="string"
-                              Placeholder="Pesquisar por sistema, status ou mensagem"
+                              Placeholder="Pesquisar por sistema, retorno, exceção..."
                               Variant="Variant.Outlined"
                               Adornment="Adornment.Start"
                               AdornmentIcon="@Icons.Material.Filled.Search"
-                              Class="audit-search-input" />
+                              Class="audit-search-input"
+                              @oninput="OnInputSearch"
+                              @onkeydown="OnKeyDownSearchTerm"
+                              />
 
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Search">
+                           StartIcon="@Icons.Material.Filled.Search"
+                           Disabled="loadingState.IsLoading || isSearching"
+                           OnClick="LoadSystemChecks">
                     Pesquisar
                 </MudButton>
             </MudStack>
@@ -48,7 +54,7 @@
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Download" >
                         Exportar
                     </MudButton>
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Visibility" >
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Visibility" OnClick="OpenSystemCheckDialog">
                         Ver detalhes
                     </MudButton>
                 </MudStack>
@@ -89,20 +95,53 @@
                 TValue="SystemCheck" 
                 DataSource="systemChecks"
                 Height="460"
-            >
+                ContextMenuItems="@gridContextMenuItems">
                 <GridColumns>
                     <GridColumn Field="@nameof(SystemCheck.Id)" HeaderText="#" Width="90" TextAlign="TextAlign.Right" />
                     <GridColumn Field="@nameof(SystemCheck.SystemName)" HeaderText="Sistema" Width="200" />
                     <GridColumn Field="@nameof(SystemCheck.Status)" HeaderText="Status" Width="140" />
                     <GridColumn Field="@nameof(SystemCheck.LatencyMs)" HeaderText="Latência (ms)" Width="140" TextAlign="TextAlign.Right" />
                     <GridColumn Field="@nameof(SystemCheck.CheckedAt)" HeaderText="Checado em" Width="180" />
-                    <GridColumn Field="@nameof(SystemCheck.Message)" HeaderText="Mensagem" Width="260" />
+                    <GridColumn Field="@nameof(SystemCheck.ErrorMessage)" HeaderText="Mensagem" Width="260" />
                     <GridColumn Field="@nameof(SystemCheck.ExceptionType)" HeaderText="Exceção" Width="180" />
                 </GridColumns>
+                <GridEvents TValue="SystemCheck" RowSelected="OnGridRowSelected" ContextMenuItemClicked="OnContextMenuClick" />
             </SfGrid>
         </MudStack>
     </MudPaper>
 </div>
+
+<SfDialog @ref="systemCheckDialog"
+          Width="980px"
+          IsModal="true"
+          ShowCloseIcon="true"
+          Visible="false"
+          CloseOnEscape="true"
+          Target="body"
+          CssClass="@DialogCssClass"
+          ZIndex="1300"
+          AllowDragging="false">
+    <DialogTemplates>
+        <Header>
+            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.Visibility" Color="Color.Primary" />
+                <MudText Typo="Typo.h6">Detalhes da checagem</MudText>
+            </MudStack>
+        </Header>
+
+        <Content>
+            <AuditoriaCheckDialogContent @key="selectedSystemCheck!.Id" SystemCheck="selectedSystemCheck" />
+        </Content>
+    </DialogTemplates>
+
+    <DialogButtons>
+        <DialogButton Content="Fechar" IsPrimary="true" CssClass="e-primary" OnClick="CloseSystemCheckDialog"></DialogButton>
+    </DialogButtons>
+
+    <DialogPositionData X="center" Y="center" />
+
+    <DialogEvents OnClose="CloseSystemCheckDialog" />
+</SfDialog>
 
 @code {
     [CascadingParameter(Name = "UserSession")]
@@ -112,6 +151,16 @@
 
     private string currentTime = DateTime.Now.ToString("HH:mm");
     private bool showFilters;
+    private bool isSearching;
+    private bool isClosingDialog;
+
+    private SfDialog? systemCheckDialog;
+    private SystemCheck? selectedSystemCheck;
+    private SystemCheck? contextMenuSelection;
+    private readonly List<object> gridContextMenuItems =
+    [
+        new ContextMenuItemModel { Text = "Visualizar registro", Id = "view-check" }
+    ];
 
     List<SystemCheck> systemChecks { get; set; } = [];
     int totalChecks => systemChecks.Count;
@@ -143,8 +192,14 @@
 
     private async Task LoadSystemChecks()
     {
+        if (isSearching)
+        {
+            return;
+        }
+
         try
         {
+            isSearching = true;
             loadingState.Show("Carregando dados de auditoria..."); 
 
             var result = await systemChecksService.GetAllChecks(searchSystemChecksFilter);
@@ -164,6 +219,7 @@
         } 
         finally
         {
+            isSearching = false;
             loadingState.Hide();    
         }
     }
@@ -173,5 +229,67 @@
         showFilters = !showFilters;
     }
 
+    private string DialogCssClass => UserSession?.PreferredTheme == ThemeOptions.Dark ? "system-check-sync-dialog system-check-sync-dialog-dark" : "system-check-sync-dialog";
+
+    private void OnGridRowSelected(RowSelectEventArgs<SystemCheck> args)
+    {
+        if (args.Data is null)
+            return;
+
+        contextMenuSelection = args.Data;
+    }
+
+    private async Task OnContextMenuClick(ContextMenuClickEventArgs<SystemCheck> args)
+    {
+        //Se selecionar a opção de visualizar uma checagem
+        if (args.Item?.Id == "view-check")
+            await OpenSystemCheckDialog();
+
+    }
+
+    private async Task OpenSystemCheckDialog()
+    {
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //Caso nenhuma linha esteja selecionada, impede o método de continuar, pois nenhuma ação pode ser
+        //executada sem ter um item selecionado.
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        if (contextMenuSelection is null)
+            return;
+
+        selectedSystemCheck = contextMenuSelection;
+
+        await JS.InvokeVoidAsync("toggleBodyScroll", true);
+
+        if (systemCheckDialog is not null)
+            await systemCheckDialog.ShowAsync();       
+    }
+
+    private async Task CloseSystemCheckDialog()
+    {
+        if (isClosingDialog)
+        {
+            return;
+        }
+
+        isClosingDialog = true;
+
+        if (systemCheckDialog is not null)
+        {
+            await systemCheckDialog.HideAsync();
+        }
+
+        await JS.InvokeVoidAsync("toggleBodyScroll", false);
+
+        selectedSystemCheck = null;
+        isClosingDialog = false;
+    }
+
+    private async Task OnInputSearch(Microsoft.AspNetCore.Components.ChangeEventArgs args) =>
+        searchSystemChecksFilter.SearchTerm = args.Value?.ToString() ?? string.Empty;
  
+    private async Task OnKeyDownSearchTerm(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter" && !isSearching)
+            await LoadSystemChecks();
+    }
 }

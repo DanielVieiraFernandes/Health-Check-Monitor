@@ -161,6 +161,15 @@ public class DatabaseService(NpgsqlConnection connection)
             sql.Append("checked_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),");
 
             //******************************************************************************************************************
+            //Campos opcionais para armazenar detalhes do sucesso
+            //******************************************************************************************************************
+
+            //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            //Resposta retornada do sistema monitorado
+            //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            sql.Append("system_response TEXT DEFAULT NULL,");
+
+            //******************************************************************************************************************
             //Campos opcionais para armazenar detalhes de erros
             //******************************************************************************************************************
 
@@ -168,7 +177,7 @@ public class DatabaseService(NpgsqlConnection connection)
             //Mensagem de erro, especificando o erro ocorrido durante a checagem do sistema.
             //Útil para diagnóstico e análise de falhas.
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-            sql.Append("message TEXT DEFAULT NULL, ");
+            sql.Append("error_message TEXT DEFAULT NULL, ");
 
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             //Tipo de exceção, armazenando o tipo específico de erro que ocorreu, como

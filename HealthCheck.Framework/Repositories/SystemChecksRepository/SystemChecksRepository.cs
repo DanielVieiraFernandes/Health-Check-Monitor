@@ -55,15 +55,50 @@ public class SystemChecksRepository(DatabaseService databaseService) : ISystemCh
         if (connection == null)
             throw new Exception("Falha ao criar conexão com o banco de dados.");
 
+        DynamicParameters searchParameters = new();
+
         string sqlSelect = $@"SELECT checks.*, ms.name AS system_name FROM {TABLE_NAME} checks 
         INNER JOIN monitored_systems ms ON ms.id = checks.system_id WHERE checks.user_id = @UserId";
+
+        //================================================================================================================================
+        //Caso o usuário tenha inserido termo(s) de busca, adiciona na query
+        //================================================================================================================================
+        if (!string.IsNullOrEmpty(filters.SearchTerm))
+        {
+            //*********************************************************************************************************************
+            //Divido o temro de busca em palavras, para permitir a busca por múltiplos termos
+            //*********************************************************************************************************************
+            string[] terms = filters.SearchTerm.Split(' ');
+            int termCounter = 0;
+
+            sqlSelect += " AND (";
+
+            foreach (string term in terms)
+            {
+                termCounter++;
+
+                string paramTermName = $"SearchTerm{termCounter}";
+                string termValue = $"%{term}%";
+
+                if (termCounter > 1)
+                    sqlSelect += " OR ";
+
+                sqlSelect += $@"ms.name ILIKE @{paramTermName} OR checks.system_response ILIKE @{paramTermName} 
+                OR checks.error_message ILIKE @{paramTermName} OR exception_type ILIKE @{paramTermName}";
+
+                searchParameters.Add(paramTermName, termValue);
+            }
+
+            sqlSelect += ") ";
+        }
+
 
         //================================================================================================================================
         //Caso queira apenas os registros das últimas 24 horas, adiciona a condição na query limitando a quantidade
         //de registros a 1441, que é o número máximo de registros que devem ser gerados nesse período
         //================================================================================================================================
         if (filters.Last24Hours)
-            sqlSelect += " AND checked_at BETWEEN(NOW() - INTERVAL '1 day') AND NOW() ORDER BY checked_at ASC LIMIT 1441";
+            sqlSelect += " AND checked_at BETWEEN(NOW() - INTERVAL '1 day') AND NOW() ORDER BY checked_at DESC LIMIT 1441";
 
         //================================================================================================================================
         //Caso queira filtrar por um período específico, adiciona a condição na query para filtrar por esse período
@@ -105,7 +140,10 @@ public class SystemChecksRepository(DatabaseService databaseService) : ISystemCh
                 sqlSelect += "ASC";
         }
 
-        var result = await connection.QueryAsync<SystemCheck>(sqlSelect, filters);
+        //Adiciono o resto dos parâmetros de busca, que são os mesmos para todos os filtros
+        searchParameters.AddDynamicParams(filters);
+
+        var result = await connection.QueryAsync<SystemCheck>(sqlSelect, searchParameters);
 
         if (connectionnAlreadyCreated == null)
             await connection.DisposeAsync();
@@ -136,5 +174,24 @@ public class SystemChecksRepository(DatabaseService databaseService) : ISystemCh
             return [];
 
         return [.. result];
+    }
+
+    public async Task<SystemCheck?> GetById(long id, NpgsqlConnection? connectionnAlreadyCreated = null)
+    {
+        var connection = connectionnAlreadyCreated ?? await databaseService.CreateNewPgConnection();
+
+        if (connection == null)
+            throw new Exception("Falha ao criar conexão com o banco de dados.");
+
+        string whereClause = "id = @Id";
+
+        string sql = QueryBuilder.BuildSelectQuery(TABLE_NAME, whereClause);
+
+        var result = await connection.QueryFirstOrDefaultAsync<SystemCheck>(sql, new { Id = id });
+
+        if (connectionnAlreadyCreated == null)
+            await connection.DisposeAsync();
+
+        return result;
     }
 }

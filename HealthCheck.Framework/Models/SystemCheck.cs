@@ -10,7 +10,8 @@ public class SystemCheck : UtilsForModels
     public HealthStatus Status { get; set; }
     public long LatencyMs { get; set; }
     public DateTime CheckedAt { get; set; } = DateTime.Now;
-    public string? Message { get; set; }
+    public string? SystemResponse { get; set; }
+    public string? ErrorMessage { get; set; }
     public string? ExceptionType { get; set; }
     public string? StackTrace { get; set; }
 

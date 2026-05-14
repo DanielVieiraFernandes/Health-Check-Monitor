@@ -10,7 +10,7 @@ public static class RecordLog
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         // Obtém o caminho completo do diretório de logs de exceções
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        var fullPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "LOG", "Exceptions");
+        var fullPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!, "LOGS", "Exceptions");
 
         //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         // Verifica a existência do diretório de logs e cria se não existir

@@ -1,6 +1,9 @@
-﻿using HealthCheck.Framework.Models;
+﻿using HealthCheck.Framework.Helpers;
+using HealthCheck.Framework.Models;
 using HealthCheck.Framework.Repositories.SystemChecksRepository;
 using HealthCheck.Framework.Services.Database.SystemChecksService.Filters;
+using HealthCheck.Framework.Services.Database.SystemChecksService.Validators;
+using System.Net;
 
 namespace HealthCheck.Framework.Services.Database.SystemChecksService;
 
@@ -22,6 +25,32 @@ public class SystemChecksService(ISystemChecksRepository systemChecksRepository)
 
     public async Task<Result<List<SystemCheck>>> GetAllChecks(SearchSystemChecksFilter filters)
     {
+        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        //Realizo as normalizações necessárias antes de validar os filtros
+        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        filters.SearchTerm = filters.SearchTerm.NormalizeWhiteSpaces();
+
+        SearchSystemChecksFilterValidator validator = new();
+
+        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        //Valida os filtros fornecidos pelo usuário
+        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        var validationResult = validator.Validate(filters);
+
+        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        //Caso a validação falhe, retorno um resultado de falha contendo os erros de validação
+        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        if (!validationResult.IsValid)
+        {
+            Failure failure = new(HttpStatusCode.BadRequest, validationResult);
+
+            return Result<List<SystemCheck>>.AsFailure(failure);
+        }
+
+        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+        //Se a validação passar, sigo para buscar os dados no repositório 
+        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
         var systemChecks = await systemChecksRepository.GetAll(filters);
 
         return Result<List<SystemCheck>>.AsSuccess(systemChecks);
@@ -33,4 +62,11 @@ public class SystemChecksService(ISystemChecksRepository systemChecksRepository)
 
         return Result<List<SystemCheck>>.AsSuccess(systemChecks);
     }
+
+    public async Task<Result<SystemCheck?>> GetCheckById(long id)
+    {
+        var systemCheck = await systemChecksRepository.GetById(id);
+        return Result<SystemCheck?>.AsSuccess(systemCheck);
+    }
+
 }

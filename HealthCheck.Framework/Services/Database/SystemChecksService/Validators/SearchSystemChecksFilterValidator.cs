@@ -1,5 +1,18 @@
-﻿namespace HealthCheck.Framework.Services.Database.SystemChecksService.Validators;
+﻿using FluentValidation;
+using HealthCheck.Framework.Services.Database.SystemChecksService.Filters;
 
-public class SearchSystemChecksFilterValidator
+namespace HealthCheck.Framework.Services.Database.SystemChecksService.Validators;
+
+public class SearchSystemChecksFilterValidator : AbstractValidator<SearchSystemChecksFilter>
 {
+
+    public SearchSystemChecksFilterValidator()
+    {
+        RuleFor(x => x.UserId).NotEmpty().WithMessage("Usuário não informado.");
+        RuleFor(x => x.SearchTerm).MaximumLength(255).WithMessage("O termo de busca não pode ter mais de 255 caracteres.");
+        RuleFor(x => x.FromDate).LessThanOrEqualTo(x => x.ToDate).When(x => x.FromDate.HasValue && x.ToDate.HasValue)
+            .WithMessage("A data de início deve ser menor ou igual à data de término.");
+    }
 }
+
+
