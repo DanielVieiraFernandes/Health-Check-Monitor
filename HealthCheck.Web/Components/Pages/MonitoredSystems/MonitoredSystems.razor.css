@@ -1,8 +1,8 @@
 .page-hero {
     border-radius: 22px;
-    border: 1px solid rgba(99, 102, 241, 0.25);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(224, 231, 255, 0.9));
-    box-shadow: 0 18px 34px rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.92));
+    box-shadow: 0 22px 40px rgba(15, 23, 42, 0.08);
 }
 
 .system-card-shell {
@@ -18,8 +18,8 @@
 .system-card-shell:hover ::deep .system-card,
 .system-card-shell:focus-visible ::deep .system-card {
     transform: translateY(-8px) scale(1.015) !important;
-    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.2) !important;
-    border-color: rgba(99, 102, 241, 0.5) !important;
+    box-shadow: 0 26px 46px rgba(15, 23, 42, 0.2) !important;
+    border-color: rgba(29, 78, 216, 0.45) !important;
 }
 
 .system-card-shell:hover ::deep .system-card::before,
@@ -31,12 +31,50 @@
     position: relative;
     overflow: hidden;
     border-radius: 16px;
-    border: 1px solid var(--mud-palette-divider) !important;
-    background: var(--mud-palette-surface) !important;
+    border: 1px solid var(--monitored-system-card-border, rgba(203, 213, 225, 0.9)) !important;
+    background: var(--monitored-system-card-bg, linear-gradient(160deg, rgba(241, 245, 249, 0.98), rgba(226, 232, 240, 0.92))) !important;
     transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
-    min-height: 190px;
+    min-height: 200px;
     cursor: pointer;
     will-change: transform;
+}
+
+:global(.monitored-systems-page.theme-light) {
+    --monitored-system-card-bg: linear-gradient(160deg, rgba(241, 245, 249, 0.98), rgba(226, 232, 240, 0.92));
+    --monitored-system-card-border: rgba(203, 213, 225, 0.9);
+}
+
+:global(.monitored-systems-page.theme-dark) {
+    --monitored-system-card-bg: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.9));
+    --monitored-system-card-border: rgba(51, 65, 85, 0.85);
+}
+
+:global(.monitored-systems-page.theme-light) ::deep .system-card,
+:global(.monitored-systems-page.theme-light) ::deep .system-card.mud-paper {
+    border-color: var(--monitored-system-card-border) !important;
+    background-color: #f1f5f9 !important;
+    background-image: var(--monitored-system-card-bg) !important;
+}
+
+:global(.monitored-systems-page.theme-dark) ::deep .system-card,
+:global(.monitored-systems-page.theme-dark) ::deep .system-card.mud-paper {
+    border-color: var(--monitored-system-card-border) !important;
+    background-color: #0f172a !important;
+    background-image: var(--monitored-system-card-bg) !important;
+}
+
+.system-card-dark,
+.system-card-dark.mud-paper {
+    border-color: rgba(51, 65, 85, 0.85) !important;
+    background-color: #0f172a !important;
+    background-image: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.9)) !important;
+}
+
+.system-card-light,
+.system-card-light.mud-paper {
+    border-color: rgba(203, 213, 225, 0.9) !important;
+    background-color: #f1f5f9 !important;
+    background-image: linear-gradient(160deg, rgba(241, 245, 249, 0.98), rgba(226, 232, 240, 0.92)) !important;
 }
 
 .monitored-systems-page ::deep .system-card .mud-typography {
@@ -53,7 +91,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    margin-right: 8px;
+    margin-right: 12px;
 }
 
 .monitored-systems-page ::deep .system-card .mud-chip {
@@ -67,7 +105,7 @@
     left: -130%;
     width: 90%;
     height: 160%;
-    background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.55) 45%, transparent 100%);
+    background: linear-gradient(120deg, transparent 0%, rgba(248, 250, 252, 0.7) 45%, transparent 100%);
     transform: skewX(-20deg);
     transition: left .45s ease;
     pointer-events: none;
@@ -75,8 +113,8 @@
 
 .monitored-systems-page ::deep .system-card:hover {
     transform: translateY(-6px) scale(1.01);
-    box-shadow: 0 16px 30px rgba(15, 23, 42, 0.14);
-    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 20px 36px rgba(15, 23, 42, 0.14);
+    border-color: rgba(29, 78, 216, 0.4);
 }
 
 .monitored-systems-page ::deep .system-card:hover::before {
@@ -84,7 +122,7 @@
 }
 
 .monitored-systems-page ::deep .system-card:focus-visible {
-    outline: 2px solid rgba(99, 102, 241, 0.7);
+    outline: 2px solid rgba(29, 78, 216, 0.6);
     outline-offset: 2px;
 }
 
@@ -102,14 +140,14 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 100%;
-    color: var(--mud-palette-info);
+    color: #1d4ed8;
 }
 
 .search-panel {
     border-radius: 18px;
-    border: 1px solid rgba(99, 102, 241, 0.24);
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(224, 231, 255, 0.82));
-    box-shadow: 0 14px 30px rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    background: linear-gradient(155deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.92));
+    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.08);
 }
 
 .search-row {
@@ -122,8 +160,8 @@
 
 .future-filters {
     border-radius: 12px;
-    border: 1px dashed rgba(99, 102, 241, 0.38);
-    background: rgba(99, 102, 241, 0.08);
+    border: 1px dashed rgba(203, 213, 225, 0.95);
+    background: rgba(241, 245, 249, 0.85);
 }
 
 .filter-chip-row {
@@ -132,15 +170,15 @@
 
 .empty-state {
     border-radius: 20px;
-    border: 1px dashed rgba(99, 102, 241, 0.38);
-    background: linear-gradient(145deg, rgba(238, 242, 255, 0.92), rgba(224, 231, 255, 0.78));
+    border: 1px dashed rgba(203, 213, 225, 0.95);
+    background: linear-gradient(150deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.88));
 }
 
 :global(.theme-dark) .page-hero,
 :global(.mud-theme-dark) .page-hero {
-    border-color: rgba(129, 140, 248, 0.38);
-    background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(49, 46, 129, 0.55));
-    box-shadow: 0 18px 34px rgba(30, 27, 75, 0.28);
+    border-color: rgba(51, 65, 85, 0.9);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8));
+    box-shadow: 0 22px 42px rgba(2, 6, 23, 0.55);
 }
 
 :global(.theme-dark) .url-line ::deep a:hover,
@@ -152,35 +190,36 @@
 :global(.theme-dark) .system-card-shell:focus-visible ::deep .system-card,
 :global(.mud-theme-dark) .system-card-shell:hover ::deep .system-card,
 :global(.mud-theme-dark) .system-card-shell:focus-visible ::deep .system-card {
-    box-shadow: 0 20px 42px rgba(67, 56, 202, 0.38) !important;
-    border-color: rgba(165, 180, 252, 0.78) !important;
+    box-shadow: 0 24px 46px rgba(2, 6, 23, 0.65) !important;
+    border-color: rgba(147, 197, 253, 0.75) !important;
 }
 
 :global(.theme-dark) .monitored-systems-page ::deep .system-card:hover,
 :global(.mud-theme-dark) .monitored-systems-page ::deep .system-card:hover {
-    box-shadow: 0 18px 36px rgba(67, 56, 202, 0.36);
-    border-color: rgba(165, 180, 252, 0.72);
+    box-shadow: 0 22px 42px rgba(2, 6, 23, 0.6);
+    border-color: rgba(147, 197, 253, 0.7);
 }
+
 
 :global(.theme-dark) .monitored-systems-page ::deep .system-card::before,
 :global(.mud-theme-dark) .monitored-systems-page ::deep .system-card::before {
-    background: linear-gradient(120deg, transparent 0%, rgba(199, 210, 254, 0.28) 45%, transparent 100%);
+    background: linear-gradient(120deg, transparent 0%, rgba(148, 163, 184, 0.4) 45%, transparent 100%);
 }
 
 :global(.theme-dark) .search-panel,
 :global(.mud-theme-dark) .search-panel {
-    border-color: rgba(129, 140, 248, 0.42);
-    background: linear-gradient(145deg, rgba(30, 27, 75, 0.56), rgba(49, 46, 129, 0.46));
+    border-color: rgba(51, 65, 85, 0.75);
+    background: linear-gradient(150deg, rgba(15, 23, 42, 0.86), rgba(30, 41, 59, 0.8));
 }
 
 :global(.theme-dark) .future-filters,
 :global(.mud-theme-dark) .future-filters {
-    border-color: rgba(99, 102, 241, 0.42);
-    background: rgba(79, 70, 229, 0.18);
+    border-color: rgba(51, 65, 85, 0.75);
+    background: rgba(15, 23, 42, 0.7);
 }
 
 :global(.theme-dark) .empty-state,
 :global(.mud-theme-dark) .empty-state {
-    border-color: rgba(99, 102, 241, 0.42);
-    background: linear-gradient(145deg, rgba(30, 27, 75, 0.44), rgba(15, 23, 42, 0.66));
+    border-color: rgba(51, 65, 85, 0.8);
+    background: linear-gradient(150deg, rgba(15, 23, 42, 0.9), rgba(2, 6, 23, 0.92));
 }
