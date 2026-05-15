@@ -32,7 +32,6 @@
     overflow: hidden;
     border-radius: 16px;
     border: 1px solid var(--monitored-system-card-border, rgba(203, 213, 225, 0.9)) !important;
-    background: var(--monitored-system-card-bg, linear-gradient(160deg, rgba(241, 245, 249, 0.98), rgba(226, 232, 240, 0.92))) !important;
     transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
     min-height: 200px;
     cursor: pointer;

@@ -110,7 +110,10 @@ public class SystemChecksRepository(DatabaseService databaseService) : ISystemCh
         //Caso queira filtrar por status de saúde, adiciona a condição na query para filtrar por esses status
         //================================================================================================================================
         if (filters.HealthStatusSelected != null)
-            sqlSelect += " AND status = ANY(@HealthStatusSelected)";
+        {
+            sqlSelect += " AND status = ANY(@HealthStatusSelectedToInt)";
+            searchParameters.Add("HealthStatusSelectedToInt", filters.HealthStatusSelected.Select(e => (int)e).ToArray());
+        }
 
         //<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
         //O FILTRO DE LATÊNCIA É UM POUCO DIFERENTE, POIS ELE NÃO FILTRA EM SI OS REGISTROS, MAS SIM ORDENA OS REGISTROS PELA LATÊNCIA.

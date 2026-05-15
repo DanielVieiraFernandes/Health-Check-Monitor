@@ -47,16 +47,18 @@
                     <MudText Typo="Typo.h6" Class="font-weight-bold">Registros de auditoria</MudText>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Use os filtros para encontrar eventos específicos.</MudText>
                 </MudStack>
-                <MudStack Row="true" Spacing="1">
+                <MudStack Row="true" Spacing="3">
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Tune" OnClick="ToggleFilters">
                         Filtros
                     </MudButton>
+                <MudStack Row="true" Spacing="2">
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Download" >
                         Exportar
                     </MudButton>
                     <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Visibility" OnClick="OpenSystemCheckDialog">
                         Ver detalhes
                     </MudButton>
+                </MudStack>
                 </MudStack>
             </MudStack>
             <MudCollapse Expanded="showFilters">
@@ -65,8 +67,12 @@
                         <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Filtros avançados</MudText>
                         <MudGrid>
                             <MudItem xs="12" sm="6" lg="3">
-                                <MudSelect T="HealthStatus" Label="Status" Variant="Variant.Outlined">
-                                    <MudSelectItem Value="HealthStatus.Healthy">@HealthStatus.Healthy.GetDescription()</MudSelectItem>
+                                <MudSelect SelectedValuesChanged="(IReadOnlyCollection<HealthStatus> list) => searchSystemChecksFilter.HealthStatusSelected = list.ToList()"
+                                    T="HealthStatus"
+                                    MultiSelection 
+                                    Label="Status" 
+                                    Variant="Variant.Outlined">
+                                    <MudSelectItem Value="HealthStatus.Healthy" >@HealthStatus.Healthy.GetDescription()</MudSelectItem>
                                     <MudSelectItem Value="HealthStatus.Unhealthy">@HealthStatus.Unhealthy.GetDescription()</MudSelectItem>
                                     <MudSelectItem Value="HealthStatus.Unknown">@HealthStatus.Unknown.GetDescription()</MudSelectItem>
                                 </MudSelect>
@@ -84,6 +90,7 @@
                     </MudStack>
                 </MudPaper>
             </MudCollapse>
+            <MudText Class="font-weight-bold">Nas últimas 24 horas: </MudText>
             <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
                 <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined" Label="true">Total: @totalChecks</MudChip>
                 <MudChip T="string" Color="Color.Error" Variant="Variant.Outlined" Label="true">Críticos: @criticalChecks</MudChip>
@@ -95,11 +102,21 @@
                 TValue="SystemCheck" 
                 DataSource="systemChecks"
                 Height="460"
-                ContextMenuItems="@gridContextMenuItems">
+                ContextMenuItems="@gridContextMenuItems"
+                AllowSorting
+                >
                 <GridColumns>
                     <GridColumn Field="@nameof(SystemCheck.Id)" HeaderText="#" Width="90" TextAlign="TextAlign.Right" />
                     <GridColumn Field="@nameof(SystemCheck.SystemName)" HeaderText="Sistema" Width="200" />
-                    <GridColumn Field="@nameof(SystemCheck.Status)" HeaderText="Status" Width="140" />
+                    <GridColumn Field="@nameof(SystemCheck.Status)" HeaderText="Status" Width="140">
+                        <Template>
+                            @{
+                                var item = (SystemCheck)context;
+                            }
+
+                            <span>@item.Status.GetDescription().Split('-')[1]</span>
+                        </Template>
+                    </GridColumn>
                     <GridColumn Field="@nameof(SystemCheck.LatencyMs)" HeaderText="Latência (ms)" Width="140" TextAlign="TextAlign.Right" />
                     <GridColumn Field="@nameof(SystemCheck.CheckedAt)" HeaderText="Checado em" Width="180" />
                     <GridColumn Field="@nameof(SystemCheck.ErrorMessage)" HeaderText="Mensagem" Width="260" />
@@ -163,9 +180,7 @@
     ];
 
     List<SystemCheck> systemChecks { get; set; } = [];
-    int totalChecks => systemChecks.Count;
-    int criticalChecks => systemChecks.Count(s => s.Status != HealthStatus.Healthy);
-    int averageLatency => systemChecks.Count > 0 ? (int)systemChecks.Where(s => s.LatencyMs > 0).Average(s => s.LatencyMs) : 0;
+    int totalChecks, criticalChecks, averageLatency;
 
     protected override async Task OnInitializedAsync()
     {
@@ -192,10 +207,9 @@
 
     private async Task LoadSystemChecks()
     {
+        //Tratamento para impedir várias chamadas desse método ao mesmo tempo
         if (isSearching)
-        {
             return;
-        }
 
         try
         {
@@ -211,6 +225,25 @@
             }
 
             systemChecks = result.Success!;
+
+            totalChecks = systemChecks.Count;
+
+            //***************************************************************************************************************************
+            //OBS: Checagens críticas são todas as checagens cujo o status não seja de um retorno "Saudável" da aplicação
+            //***************************************************************************************************************************
+
+            criticalChecks = systemChecks.Count(sc => sc.Status != HealthStatus.Healthy);
+
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            //Filtro as checagens cujo a latência zeja maior que zero
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            var checksWhereLatencyGreaterThanZero = systemChecks.Where(sc => sc.LatencyMs > 0).ToList();
+
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            //Caso tenha pelo menos uma checagem com latência maior que zero, então realizo o cálculo da média,
+            //do contrário, atribuo zero a média de latência
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            averageLatency = checksWhereLatencyGreaterThanZero.Count > 0 ? (int)checksWhereLatencyGreaterThanZero.Average(c => c.LatencyMs) : 0;
         }
         catch (Exception)
         {
@@ -220,7 +253,7 @@
         finally
         {
             isSearching = false;
-            loadingState.Hide();    
+            loadingState.Hide();
         }
     }
 
