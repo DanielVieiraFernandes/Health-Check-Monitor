@@ -67,7 +67,8 @@
                         <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Filtros avançados</MudText>
                         <MudGrid>
                             <MudItem xs="12" sm="6" lg="3">
-                                <MudSelect SelectedValuesChanged="(IReadOnlyCollection<HealthStatus> list) => searchSystemChecksFilter.HealthStatusSelected = list.ToList()"
+                                <MudSelect 
+                                    SelectedValuesChanged="(IReadOnlyCollection<HealthStatus> list) => searchSystemChecksFilter.HealthStatusSelected = list.ToList()"
                                     T="HealthStatus"
                                     MultiSelection 
                                     Label="Status" 
@@ -78,33 +79,41 @@
                                 </MudSelect>
                             </MudItem>
                             <MudItem xs="12" sm="6" lg="3">
-                                <MudDateRangePicker Label="Período" Variant="Variant.Outlined" />
+                                <MudDateRangePicker Label="Período" Variant="Variant.Outlined" DateRangeChanged="DateRangeChangedCheckingPeriod" Clearable />
                             </MudItem>
                             <MudItem xs="12" sm="6" lg="3">
-                                <MudSelect T="string" Label="Latência" Variant="Variant.Outlined">
-                                    <MudSelectItem Value="1">Maiores latências</MudSelectItem>
-                                    <MudSelectItem Value="2">Menores latências</MudSelectItem>
+                                <MudSelect @bind-Value="searchSystemChecksFilter.LatencyPreference"
+                                           Clearable
+                                           T="LatencyPreference?"
+                                           Label="Latência" 
+                                           Variant="Variant.Outlined">
+                                    <MudSelectItem Value="@((LatencyPreference?)LatencyPreference.Highest)">Maiores latências</MudSelectItem>
+                                    <MudSelectItem Value="@((LatencyPreference?)LatencyPreference.Lowest)">Menores latências</MudSelectItem>
                                 </MudSelect>
                             </MudItem>
                         </MudGrid>
                     </MudStack>
                 </MudPaper>
             </MudCollapse>
-            <MudText Class="font-weight-bold">Nas últimas 24 horas: </MudText>
+            <MudText Class="font-weight-bold">Resumo dos registros recuperados: </MudText>
             <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
                 <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined" Label="true">Total: @totalChecks</MudChip>
                 <MudChip T="string" Color="Color.Error" Variant="Variant.Outlined" Label="true">Críticos: @criticalChecks</MudChip>
                 <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Label="true">Latência média: @averageLatency ms</MudChip>
             </MudStack>
 
-            <SfGrid 
+            <SfGrid @ref="systemChecksGridRef"
                 AdaptiveUIMode="AdaptiveMode.Both"
                 TValue="SystemCheck" 
                 DataSource="systemChecks"
                 Height="460"
                 ContextMenuItems="@gridContextMenuItems"
                 AllowSorting
+                AllowPaging
                 >
+
+                <GridPageSettings PageSize="10" PageSizes="new int[] { 10, 20, 50, 100 }"   />
+
                 <GridColumns>
                     <GridColumn Field="@nameof(SystemCheck.Id)" HeaderText="#" Width="90" TextAlign="TextAlign.Right" />
                     <GridColumn Field="@nameof(SystemCheck.SystemName)" HeaderText="Sistema" Width="200" />
@@ -171,6 +180,7 @@
     private bool isSearching;
     private bool isClosingDialog;
 
+    private SfGrid<SystemCheck>? systemChecksGridRef;
     private SfDialog? systemCheckDialog;
     private SystemCheck? selectedSystemCheck;
     private SystemCheck? contextMenuSelection;
@@ -252,6 +262,8 @@
         } 
         finally
         {
+            //Limpa as ordenações feitas na grid após uma busca
+            await systemChecksGridRef!.ClearSortingAsync();
             isSearching = false;
             loadingState.Hide();
         }
@@ -324,5 +336,11 @@
     {
         if (args.Key == "Enter" && !isSearching)
             await LoadSystemChecks();
+    }
+
+    private async Task DateRangeChangedCheckingPeriod(DateRange dateRange)
+    {
+        searchSystemChecksFilter.FromDate = dateRange?.Start ?? null;
+        searchSystemChecksFilter.ToDate = dateRange?.End ?? null;
     }
 }

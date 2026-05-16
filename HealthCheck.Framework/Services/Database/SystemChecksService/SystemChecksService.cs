@@ -28,7 +28,7 @@ public class SystemChecksService(ISystemChecksRepository systemChecksRepository)
         //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
         //Realizo as normalizações necessárias antes de validar os filtros
         //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-        filters.SearchTerm = filters.SearchTerm.NormalizeWhiteSpaces();
+        filters.SearchTerm = filters.SearchTerm.NormalizeWhiteSpaces(removeAccent: true, removeMultipleSpaces: true);
 
         SearchSystemChecksFilterValidator validator = new();
 

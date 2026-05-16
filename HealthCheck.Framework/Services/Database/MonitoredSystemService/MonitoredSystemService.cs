@@ -243,12 +243,12 @@ Responsável: Worker de verificação de saúde
 
     private static void NormalizeMonitoredSystem(MonitoredSystem monitoredSystem)
     {
-        monitoredSystem.Name = monitoredSystem.Name.NormalizeWhiteSpaces();
-        monitoredSystem.Url = monitoredSystem.Url.NormalizeWhiteSpaces();
+        monitoredSystem.Name = monitoredSystem.Name.NormalizeWhiteSpaces(removeMultipleSpaces: true);
+        monitoredSystem.Url = monitoredSystem.Url.NormalizeWhiteSpaces(removeMultipleSpaces: true);
     }
 
     private static void NormalizeSearchFilters(SearchFiltersMonitoredSystems searchFiltersMonitoredSystems)
     {
-        searchFiltersMonitoredSystems.SearchTerm = searchFiltersMonitoredSystems.SearchTerm.NormalizeWhiteSpaces();
+        searchFiltersMonitoredSystems.SearchTerm = searchFiltersMonitoredSystems.SearchTerm.NormalizeWhiteSpaces(removeAccent: true, removeMultipleSpaces: true);
     }
 }

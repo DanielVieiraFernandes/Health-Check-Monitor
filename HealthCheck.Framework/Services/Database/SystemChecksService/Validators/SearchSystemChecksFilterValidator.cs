@@ -21,6 +21,8 @@ public class SearchSystemChecksFilterValidator : AbstractValidator<SearchSystemC
             .WithMessage("O status selecionado ('{PropertyValue}') não é um valor válido para HealthStatus.")
             //O .When garante que a validação só ocorra se a lista não for nula e tiver itens
             .When(x => x.HealthStatusSelected != null && x.HealthStatusSelected.Count > 0);
+        RuleFor(x => x.LatencyPreference).IsInEnum().When(x => x.LatencyPreference.HasValue)
+            .WithMessage("A preferência de latência selecionada ('{PropertyValue}') não é um valor válido para LatencyPreference.");
     }
 }
 

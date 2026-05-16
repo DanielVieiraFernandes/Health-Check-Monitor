@@ -98,7 +98,7 @@ public class SystemChecksRepository(DatabaseService databaseService) : ISystemCh
         //de registros a 1441, que é o número máximo de registros que devem ser gerados nesse período
         //================================================================================================================================
         if (filters.Last24Hours)
-            sqlSelect += " AND checked_at BETWEEN(NOW() - INTERVAL '1 day') AND NOW() ORDER BY checked_at DESC LIMIT 1441";
+            sqlSelect += " AND checked_at BETWEEN(NOW() - INTERVAL '1 day') AND NOW()";
 
         //================================================================================================================================
         //Caso queira filtrar por um período específico, adiciona a condição na query para filtrar por esse período
@@ -109,7 +109,7 @@ public class SystemChecksRepository(DatabaseService databaseService) : ISystemCh
         //================================================================================================================================
         //Caso queira filtrar por status de saúde, adiciona a condição na query para filtrar por esses status
         //================================================================================================================================
-        if (filters.HealthStatusSelected != null)
+        if (filters.HealthStatusSelected != null && filters.HealthStatusSelected.Count > 0)
         {
             sqlSelect += " AND status = ANY(@HealthStatusSelectedToInt)";
             searchParameters.Add("HealthStatusSelectedToInt", filters.HealthStatusSelected.Select(e => (int)e).ToArray());
@@ -142,6 +142,8 @@ public class SystemChecksRepository(DatabaseService databaseService) : ISystemCh
             else
                 sqlSelect += "ASC";
         }
+        else if (filters.Last24Hours)
+            sqlSelect += " ORDER BY checked_at DESC";
 
         //Adiciono o resto dos parâmetros de busca, que são os mesmos para todos os filtros
         searchParameters.AddDynamicParams(filters);
