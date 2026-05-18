@@ -95,7 +95,7 @@
                     </MudStack>
                 </MudPaper>
             </MudCollapse>
-            <MudText Class="font-weight-bold">Resumo dos registros recuperados: </MudText>
+            <MudText Class="font-weight-bold">@summaryText</MudText>
             <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
                 <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined" Label="true">Total: @totalChecks</MudChip>
                 <MudChip T="string" Color="Color.Error" Variant="Variant.Outlined" Label="true">Críticos: @criticalChecks</MudChip>
@@ -156,7 +156,7 @@
         </Header>
 
         <Content>
-            <AuditoriaCheckDialogContent @key="selectedSystemCheck!.Id" SystemCheck="selectedSystemCheck" />
+            <AuditCheckDialogContent @key="selectedSystemCheck!.Id" SystemCheck="selectedSystemCheck" />
         </Content>
     </DialogTemplates>
 
@@ -176,15 +176,15 @@
     SearchSystemChecksFilter searchSystemChecksFilter { get; set; } = new();
 
     private string currentTime = DateTime.Now.ToString("HH:mm");
-    private bool showFilters;
-    private bool isSearching;
-    private bool isClosingDialog;
-
-    private SfGrid<SystemCheck>? systemChecksGridRef;
-    private SfDialog? systemCheckDialog;
-    private SystemCheck? selectedSystemCheck;
-    private SystemCheck? contextMenuSelection;
-    private readonly List<object> gridContextMenuItems =
+    string summaryText = string.Empty;
+    bool showFilters;
+    bool isSearching;
+    bool isClosingDialog;
+    SfGrid<SystemCheck>? systemChecksGridRef;
+    SfDialog? systemCheckDialog;
+    SystemCheck? selectedSystemCheck;
+    SystemCheck? contextMenuSelection;
+    readonly List<object> gridContextMenuItems =
     [
         new ContextMenuItemModel { Text = "Visualizar registro", Id = "view-check" }
     ];
@@ -235,6 +235,14 @@
             }
 
             systemChecks = result.Success!;
+
+            //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+            //Altera o texto que informa o período das checagens que foram retornadas
+            //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+            var period = searchSystemChecksFilter.Last24Hours ? "24 horas" : 
+            $"{searchSystemChecksFilter.FromDate?.ToString("dd/MM/yy")} - {searchSystemChecksFilter.ToDate?.ToString("dd/MM/yy")}";
+
+            summaryText = $"Resumo dos registros encontrados no período de {period}";
 
             totalChecks = systemChecks.Count;
 

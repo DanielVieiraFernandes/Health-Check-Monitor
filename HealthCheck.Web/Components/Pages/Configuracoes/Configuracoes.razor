@@ -1,0 +1,296 @@
+@page "/configuracoes"
+@attribute [Authorize]
+@implements IDisposable
+@inject ISnackbar snackbar
+
+<PageTitle>Configurações</PageTitle>
+
+<div class="settings-page">
+    <MudPaper Class="page-hero pa-5 mb-4" Elevation="0">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.h4" Class="font-weight-bold">Configurações do monitoramento</MudText>
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Parâmetros globais do worker para execução das checagens.</MudText>
+            </MudStack>
+        </MudStack>
+    </MudPaper>
+
+    <MudGrid>
+        <MudItem xs="12" lg="12">
+            <MudPaper Class="settings-card pa-4" Elevation="1">
+                <MudStack Spacing="3">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Primary" />
+                        <MudText Typo="Typo.h6" Class="font-weight-bold">Execução do worker</MudText>
+                    </MudStack>
+
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="field-help-row mb-1">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Intervalo de execução</MudText>
+                                <MudTooltip Text="Define de quanto em quanto tempo o worker inicia um novo ciclo completo de monitoramento.">
+                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Info" Class="field-help-icon" />
+                                </MudTooltip>
+                            </MudStack>
+                            <MudNumericField T="int"
+                                             Variant="Variant.Outlined"
+                                             Min="MIN_INTERVAL_SECONDS"
+                                             Max="MAX_INTERVAL_SECONDS"
+                                             HideSpinButtons
+                                             @bind-Value="workerConfig.MonitoringIntervalSeconds"
+                                             Error="@(!string.IsNullOrWhiteSpace(intervalErrorMessage))"
+                                             ErrorText="@intervalErrorMessage" />
+                        </MudItem>
+                        <MudItem xs="12" md="6">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="field-help-row mb-1">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Timeout de checagem</MudText>
+                                <MudTooltip Text="Tempo máximo de espera por resposta de cada requisição. Ao exceder, a checagem é tratada como falha por timeout.">
+                                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Info" Class="field-help-icon" />
+                                </MudTooltip>
+                            </MudStack>
+                            <MudNumericField T="int"
+                                             Variant="Variant.Outlined"
+                                             Min="MIN_TIMEOUT_SECONDS"
+                                             Max="MAX_TIMEOUT_SECONDS"
+                                             HideSpinButtons
+                                             @bind-Value="workerConfig.TimeoutSeconds"
+                                             Error="@(!string.IsNullOrWhiteSpace(timeoutErrorMessage))"
+                                             ErrorText="@timeoutErrorMessage" />
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudDivider />
+
+                    <MudStack Spacing="1">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Filled.Tune" Color="Color.Secondary" />
+                            <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Parâmetros avançados</MudText>
+                        </MudStack>
+
+                        <MudPaper Class="future-parameters pa-3" Elevation="0">
+                            <MudGrid>
+                                <MudItem xs="12" md="4">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="field-help-row mb-1">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">Concorrência máxima</MudText>
+                                        <MudTooltip Text="Quantidade máxima de verificações processadas em paralelo no mesmo ciclo. Valores altos aumentam carga de rede e CPU.">
+                                            <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Info" Class="field-help-icon" />
+                                        </MudTooltip>
+                                    </MudStack>
+                                    <MudNumericField T="int"
+                                                     Variant="Variant.Outlined"
+                                                     Min="MIN_CONCURRENT_CHECKS"
+                                                     Max="MAX_CONCURRENT_CHECKS"
+                                                     @bind-Value="workerConfig.MaxConcurrentChecks"
+                                                     HideSpinButtons
+                                                     Error="@(!string.IsNullOrWhiteSpace(maxParallelChecksErrorMessage))"
+                                                     ErrorText="@maxParallelChecksErrorMessage" />
+                                </MudItem>
+                                <MudFlexBreak />
+                                <MudItem xs="12" md="4">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="field-help-row mb-1">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">Quantidade de novas tentativas para registrar checagem</MudText>
+                                        <MudTooltip Text="Número de novas tentativas após uma falha inicial antes de registrar o resultado final da checagem.">
+                                            <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Info" Class="field-help-icon" />
+                                        </MudTooltip>
+                                    </MudStack>
+                                    <MudNumericField T="int"
+                                                     Variant="Variant.Outlined"
+                                                     Min="MIN_RETRY_COUNT"
+                                                     Max="MAX_RETRY_COUNT"
+                                                     HideSpinButtons
+                                                     @bind-Value="workerConfig.MaxRetries"
+                                                     Error="@(!string.IsNullOrWhiteSpace(retryCountErrorMessage))"
+                                                     ErrorText="@retryCountErrorMessage" />
+                                </MudItem>
+                                <MudItem xs="12" md="4">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="field-help-row mb-1">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">Atraso entre tentativas</MudText>
+                                        <MudTooltip Text="Intervalo em milissegundos entre uma tentativa e outra quando o sistema estiver indisponível.">
+                                            <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Info" Class="field-help-icon" />
+                                        </MudTooltip>
+                                    </MudStack>
+                                    <MudNumericField T="int"
+                                                     Variant="Variant.Outlined"
+                                                     Min="MIN_RETRY_DELAY_MS"
+                                                     Max="MAX_RETRY_DELAY_MS"
+                                                     HideSpinButtons
+                                                     @bind-Value="workerConfig.DelayBetweenRetriesMs"
+                                                     Error="@(!string.IsNullOrWhiteSpace(retryDelayMsErrorMessage))"
+                                                     ErrorText="@retryDelayMsErrorMessage" />
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
+                    </MudStack>
+
+                    <MudDivider />
+
+                    <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd" Class="actions-row actions-footer">
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Secondary"
+                                   StartIcon="@Icons.Material.Filled.Restore"
+                                   OnClick="RestoreDefaults">
+                            Restaurar padrão
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Save"
+                                   OnClick="SaveSettings">
+                            Salvar
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</div>
+
+@code {
+    [CascadingParameter(Name = "UserSession")]
+    public UserSessionInfo? UserSession { get; set; }
+
+
+    WorkerConfig workerConfig { get; set; } = new();
+    WorkerConfig workerConfigClone { get; set; } = new();
+
+    string? intervalErrorMessage;
+    string? timeoutErrorMessage;
+    string? maxParallelChecksErrorMessage;
+    string? retryCountErrorMessage;
+    string? retryDelayMsErrorMessage;
+
+    bool HasValidationErrors =>
+        !string.IsNullOrWhiteSpace(intervalErrorMessage)
+        || !string.IsNullOrWhiteSpace(timeoutErrorMessage)
+        || !string.IsNullOrWhiteSpace(maxParallelChecksErrorMessage)
+        || !string.IsNullOrWhiteSpace(retryCountErrorMessage)
+        || !string.IsNullOrWhiteSpace(retryDelayMsErrorMessage);
+
+    const int MIN_INTERVAL_SECONDS = 15; 
+    const int MAX_INTERVAL_SECONDS = 30; 
+    const int MIN_TIMEOUT_SECONDS = 5; 
+    const int MAX_TIMEOUT_SECONDS = 30; 
+    const int MIN_CONCURRENT_CHECKS = 5;
+    const int MAX_CONCURRENT_CHECKS = 20;
+    const int MIN_RETRY_COUNT = 0;
+    const int MAX_RETRY_COUNT = 5;
+    const int MIN_RETRY_DELAY_MS = 0;
+    const int MAX_RETRY_DELAY_MS = 5000;
+
+    protected override async Task OnInitializedAsync()
+    {
+        loadingState.OnChange += HandleLoadingStateChanged;
+
+        await LoadWorkerConfig();
+    }
+
+    public void Dispose()
+    {
+        loadingState.OnChange -= HandleLoadingStateChanged;
+    }
+
+    private void HandleLoadingStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadWorkerConfig()
+    {
+        try
+        {
+            loadingState.Show("Carregando configurações do worker...");
+
+            var result = await workerConfigService.Get();
+
+            if (result.IsFailure)
+            {
+                snackbar.Add("Falha ao carregar configurações do worker.", Severity.Error);
+                return;
+            }
+
+            workerConfig = result.Success!;
+            workerConfigClone = result.Success!.Clone();
+
+            workerConfig.UserUUIDLastModified = UserSession!.UserId;
+
+            ValidateSettings();
+        }
+        catch (Exception)
+        {
+            snackbar.Add("Ocorreu um erro inesperado ao carregar as configurações do worker.", Severity.Error);
+            throw;
+        } 
+        finally
+        {
+            loadingState.Hide();
+        }
+    }
+
+    private bool ValidateSettings()
+    {
+        intervalErrorMessage = GetValidationError(workerConfig.MonitoringIntervalSeconds, MIN_INTERVAL_SECONDS, MAX_INTERVAL_SECONDS, "intervalo de execução");
+        timeoutErrorMessage = GetValidationError(workerConfig.TimeoutSeconds, MIN_TIMEOUT_SECONDS, MAX_TIMEOUT_SECONDS, "timeout de checagem");
+        maxParallelChecksErrorMessage = GetValidationError(workerConfig.MaxConcurrentChecks, MIN_CONCURRENT_CHECKS, MAX_CONCURRENT_CHECKS, "concorrência máxima");
+        retryCountErrorMessage = GetValidationError(workerConfig.MaxRetries, MIN_RETRY_COUNT, MAX_RETRY_COUNT, "quantidade de tentativas");
+        retryDelayMsErrorMessage = GetValidationError(workerConfig.DelayBetweenRetriesMs, MIN_RETRY_DELAY_MS, MAX_RETRY_DELAY_MS, "atraso entre tentativas");
+
+        return !HasValidationErrors;
+    }
+
+    private static string? GetValidationError(int value, int min, int max, string fieldLabel)
+    {
+        if (value < min || value > max)
+        {
+            return $"O campo {fieldLabel} deve estar entre {min} e {max}.";
+        }
+
+        return null;
+    }
+
+    private void RestoreDefaults()
+    {
+        workerConfig = workerConfigClone.Clone();
+        ValidateSettings();
+        snackbar.Add("Valores restaurados para a última configuração salva.", Severity.Info);
+    }
+
+    private async Task SaveSettings()
+    {
+        if (loadingState.IsLoading)
+            return;
+
+        if (!ValidateSettings())
+        {
+            snackbar.Add("Existem campos inválidos. Revise os valores antes de salvar.", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            loadingState.Show("Salvando configurações do worker...");
+
+            var result = await workerConfigService.Update(workerConfig);
+
+            if (result.IsFailure)
+            {
+                var errors = string.Join(", ", result.Failure?.Errors.Select(e => e.ErrorMessage) ?? ["Falha ao salvar configurações do worker."]);
+                snackbar.Add(errors, Severity.Error);
+                return;
+            }
+
+            workerConfig = result.Success!;
+            workerConfigClone = result.Success!.Clone();
+            ValidateSettings();
+
+            snackbar.Add("Configurações do worker atualizadas com sucesso.", Severity.Success);
+        }
+        catch (Exception)
+        {
+            snackbar.Add("Ocorreu um erro inesperado ao salvar as configurações do worker.", Severity.Error);
+            throw;
+        }
+        finally
+        {
+            loadingState.Hide();
+        }
+    }
+}
