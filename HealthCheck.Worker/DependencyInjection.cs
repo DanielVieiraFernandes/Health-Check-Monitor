@@ -1,8 +1,10 @@
 ﻿using HealthCheck.Framework.Repositories.MonitoredSystemRepository;
 using HealthCheck.Framework.Repositories.SystemChecksRepository;
+using HealthCheck.Framework.Repositories.WorkerConfigRepository;
 using HealthCheck.Framework.Services.Database;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService;
 using HealthCheck.Framework.Services.Database.SystemChecksService;
+using HealthCheck.Framework.Services.Database.WorkerConfigService;
 using HealthCheck.Worker.Services;
 using Serilog;
 
@@ -36,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped(config => new DatabaseService(connectionString));
         services.AddScoped<MonitoredSystemService>();
         services.AddScoped<SystemChecksService>();
+        services.AddScoped<WorkerConfigService>();
     }
 
     private static void AddRepositories(IServiceCollection services)
@@ -45,5 +48,7 @@ public static class DependencyInjection
 
         services.AddScoped<IMonitoredSystemRepository, MonitoredSystemRepository>();
         services.AddScoped<ISystemChecksRepository, SystemChecksRepository>();
+        services.AddScoped<ISystemChecksRepository, SystemChecksRepository>();
+        services.AddScoped<IWorkerConfigRepository, WorkerConfigRepository>();
     }
 }

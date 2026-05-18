@@ -1,7 +1,9 @@
 ﻿using HealthCheck.Framework.Enums;
 using HealthCheck.Framework.Models;
+using HealthCheck.Framework.Services.Database.MonitoredSystemService;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService.DTOS;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService.Validators;
+using HealthCheck.Framework.Services.Database.SystemChecksService;
 using System.Diagnostics;
 using System.Net;
 
@@ -12,8 +14,8 @@ public class MonitoringServices
     private readonly ILogger<Worker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IHttpClientFactory _httpClientFactory;
-
-    private readonly uint _healthCheckTimeoutSeconds;
+    private MonitoredSystemService? _monitoredSystemService = null;
+    private SystemChecksService? _systemCheckService = null;
 
     public MonitoringServices(ILogger<Worker> logger,
                               IServiceScopeFactory scopeFactory,
@@ -23,25 +25,24 @@ public class MonitoringServices
         _logger = logger;
         _scopeFactory = scopeFactory;
         _httpClientFactory = httpClientFactory;
-
-        _healthCheckTimeoutSeconds = configuration.GetValue<uint>("Settings:HealthCheckTimeoutSeconds");
     }
 
     /// <summary>
     /// Executa o monitoramento dos sistemas pendentes de verificação.
     /// </summary>
     /// <param name="stoppingToken"></param>
+    /// <param name="workerConfig"></param>
     /// <returns></returns>
-    public async Task ExecutarMonitoramento(CancellationToken stoppingToken)
+    public async Task ExecutarMonitoramento(CancellationToken stoppingToken, WorkerConfig workerConfig)
     {
         try
         {
             //Crie um escopo para serviços Scoped (ex.: repositórios/serviços de banco).
             using var scope = _scopeFactory.CreateScope();
-            var monitoredSystemService = scope.ServiceProvider
+            _monitoredSystemService = scope.ServiceProvider
                 .GetRequiredService<HealthCheck.Framework.Services.Database.MonitoredSystemService.MonitoredSystemService>();
 
-            var resultPending = await monitoredSystemService.GetPendingMonitoredSystemsAsync();
+            var resultPending = await _monitoredSystemService.GetPendingMonitoredSystemsAsync();
 
             //Caso haja falha ao obter os sistemas pendentes, registre o erro e retorne para agendar a próxima verificação.
             if (resultPending.IsFailure)
@@ -63,12 +64,12 @@ public class MonitoringServices
 
             //Cria uma instância do serviço de verificações de sistemas para registrar os resultados das verificações após
             //processar cada sistema monitorado pendente.
-            var systemCheckService = scope.ServiceProvider
+            _systemCheckService = scope.ServiceProvider
                 .GetRequiredService<HealthCheck.Framework.Services.Database.SystemChecksService.SystemChecksService>();
 
 
-            //Paralelismo controlado para evitar sobrecarga (10 requisições simultâneas).
-            var semaphore = new SemaphoreSlim(10);
+            //Paralelismo controlado para evitar sobrecarga 
+            var semaphore = new SemaphoreSlim(workerConfig.MaxConcurrentChecks);
 
             Stopwatch stopwatch = new();
 
@@ -108,7 +109,7 @@ public class MonitoringServices
 
                     //Configuro um timeout de segundos para não esperar por
                     //muito tempo uma resposta do sistema
-                    client.Timeout = TimeSpan.FromSeconds(_healthCheckTimeoutSeconds);
+                    client.Timeout = TimeSpan.FromSeconds(workerConfig.TimeoutSeconds);
 
                     stopwatch.Start();
                     //Realizo a requisição HTTP para a URL do sistema monitorado.
@@ -149,46 +150,14 @@ public class MonitoringServices
                     // para notificar os responsáveis sobre a indisponibilidade do sistema.
                     //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
 
-                    //--------------------------------------------------------------------------------------------------------------------
-                    //Tenta registrar a checagem realizada no banco de dados
-                    //--------------------------------------------------------------------------------------------------------------------
-                    try
-                    {
-                        //Registro a checagem realizada no banco de dados
-                        await systemCheckService.CreateCheck(systemCheck);
-                    }
-                    //--------------------------------------------------------------------------------------------------------------------
-                    //Caso não consiga, registra o erro no log, informando o ID do sistema monitorado e a URL, mas continua a execução
-                    //para tentar atualizar o status do sistema monitorado e processar os demais sistemas pendentes.
-                    //--------------------------------------------------------------------------------------------------------------------
-                    catch (Exception ex)
-                    {
-                        //GRAVA O LOG DE FALHA AO TENTAR REGISTRAR A CHECAGEM REALIZADA NO BANCO DE DADOS, INFORMANDO O ID DO SISTEMA MONITORADO E A URL.
-                        _logger.LogError(ex, "Falha ao tentar registrar a checagem realizada no banco de dados. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
-                    }
+                    //*************************************************************************************************************************************************************************
+                    //Tenta atualizar as informações do sistema monitorado
+                    //registrando a checagem realizada e atualizando o status do sistema monitorado no banco de dados
+                    //*************************************************************************************************************************************************************************
+                    var resultUpdate = await TryUpdateInformationCheck(monitoredSystem, systemCheck, currentStatus, workerConfig);
 
-                    //--------------------------------------------------------------------------------------------------------------------
-                    //Tenta atualizar o status do sistema monitorado no banco de dados 
-                    //--------------------------------------------------------------------------------------------------------------------
-                    try
-                    {
-                        UpdateMonitoredSystemStatusDTO updateMonitoredSystemStatus = new()
-                        {
-                            Id = monitoredSystem.Id,
-                            LastCheckedAt = DateTime.Now,
-                            Status = currentStatus
-                        };
-
-                        await monitoredSystemService.UpdateMonitoredSystemStatus(updateMonitoredSystemStatus);
-                    }
-                    //--------------------------------------------------------------------------------------------------------------------
-                    //Caso não consiga, registra o erro no log, informando o ID do sistema monitorado e a URL, mas continua a execução
-                    //--------------------------------------------------------------------------------------------------------------------
-                    catch (Exception ex)
-                    {
-                        //GRAVA O LOG DE FALHA AO ATUALIZAR O SISTEMA MONITORADO, INFORMANDO O ID DO SISTEMA MONITORADO E A URL.
-                        _logger.LogError(ex, "Falha ao atualizar o sistema monitorado. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
-                    }
+                    if (!resultUpdate)
+                        _logger.LogError("Falha ao atualizar as informações do sistema monitorado. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
 
                     stopwatch.Reset();
                     semaphore.Release();
@@ -202,6 +171,88 @@ public class MonitoringServices
         {
             _logger.LogError(ex, "Falha ao processar URLs pendentes no worker.");
         }
+    }
+
+    private async Task<bool> TryUpdateInformationCheck(MonitoredSystem monitoredSystem,
+                                                       SystemCheck systemCheck,
+                                                       HealthStatus currentStatus,
+                                                       WorkerConfig workerConfig)
+    {
+        byte retryCount = 0;
+        bool isSuccess = true;
+
+        while (retryCount < workerConfig.MaxRetries)
+        {
+            retryCount++;
+
+            //--------------------------------------------------------------------------------------------------------------------
+            //Tenta registrar a checagem realizada no banco de dados
+            //--------------------------------------------------------------------------------------------------------------------
+            try
+            {
+                //Registro a checagem realizada no banco de dados
+                await _systemCheckService!.CreateCheck(systemCheck);
+                isSuccess = true;
+            }
+            //--------------------------------------------------------------------------------------------------------------------
+            //Caso não consiga, registra o erro no log, informando o ID do sistema monitorado e a URL, mas continua a execução
+            //para tentar atualizar o status do sistema monitorado e processar os demais sistemas pendentes.
+            //--------------------------------------------------------------------------------------------------------------------
+            catch (Exception ex)
+            {
+                //GRAVA O LOG DE FALHA AO TENTAR REGISTRAR A CHECAGEM REALIZADA NO BANCO DE DADOS, INFORMANDO O ID DO SISTEMA MONITORADO E A URL.
+                _logger.LogError(ex, "Falha ao tentar registrar a checagem realizada no banco de dados. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
+                isSuccess = false;
+            }
+
+
+            //========================================================================================================================================
+            //Somente se o registro da checagem no banco de dados for bem sucedido, tenta atualizar o status do sistema monitorado.
+            //========================================================================================================================================
+            if (isSuccess)
+            {
+                //--------------------------------------------------------------------------------------------------------------------
+                //Tenta atualizar o status do sistema monitorado no banco de dados 
+                //--------------------------------------------------------------------------------------------------------------------
+                try
+                {
+                    UpdateMonitoredSystemStatusDTO updateMonitoredSystemStatus = new()
+                    {
+                        Id = monitoredSystem.Id,
+                        LastCheckedAt = DateTime.Now,
+                        Status = currentStatus
+                    };
+
+                    var result = await _monitoredSystemService!.UpdateMonitoredSystemStatus(updateMonitoredSystemStatus);
+
+                    if (result.IsFailure)
+                    {
+                        var failure = result.Failure;
+                        var errors = string.Join("\n - ", failure?.Errors.Select(e => e.ErrorMessage) ?? ["!!!Motivo desconhecido!!!"]);
+                        _logger.LogError("Falha ao atualizar o sistema monitorado. SistemaId: {SystemId}, Url: {Url}, Status: {StatusCode}, Motivo: {Reason}",
+                                         monitoredSystem.Id, monitoredSystem.Url, failure?.StatusCode, errors);
+                        isSuccess = false;
+                        continue;
+                    }
+
+                    isSuccess = true;
+                }
+                //--------------------------------------------------------------------------------------------------------------------
+                //Caso não consiga, registra o erro no log, informando o ID do sistema monitorado e a URL, mas continua a execução
+                //--------------------------------------------------------------------------------------------------------------------
+                catch (Exception ex)
+                {
+                    //GRAVA O LOG DE FALHA AO ATUALIZAR O SISTEMA MONITORADO, INFORMANDO O ID DO SISTEMA MONITORADO E A URL.
+                    _logger.LogError(ex, "Falha ao atualizar o sistema monitorado. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
+                    isSuccess = false;
+                }
+
+            }
+
+            await Task.Delay(workerConfig.DelayBetweenRetriesMs);
+        }
+
+        return isSuccess;
     }
 
     private static string GetExceptionName(Exception ex, CancellationToken stoppingToken)
