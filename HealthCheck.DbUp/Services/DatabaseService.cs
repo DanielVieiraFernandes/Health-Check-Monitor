@@ -205,10 +205,74 @@ public class DatabaseService(NpgsqlConnection connection)
             Console.WriteLine($"Erro ao criar tabela de 'checagem de sistemas' no sistema: {ex.Message} ");
         }
     }
+    public async Task CreateWorkerConfigTable()
+    {
+        try
+        {
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine("Criando tabela de configuração do worker... ");
+
+            StringBuilder sql = new();
+
+            sql.Append("DROP TABLE IF EXISTS worker_config CASCADE; ");
+            sql.Append("CREATE TABLE worker_config ( ");
+            //**********************************************************************************************************************
+            //Chave fixa para garantir registro único global de configuração.
+            //**********************************************************************************************************************
+            sql.Append("id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1), ");
+            //**********************************************************************************************************************
+            //Intervalo em segundos para o worker realizar as checagens nos sistemas monitorados.
+            //O valor padrão é 30 segundos, mas pode ser ajustado conforme necessário para equilibrar a
+            //frequência de monitoramento e a carga no sistema.
+            //**********************************************************************************************************************
+            sql.Append("monitoring_interval_seconds SMALLINT NOT NULL DEFAULT 30, ");
+            //**********************************************************************************************************************
+            //Tempo limite em segundos para cada checagem realizada pelo worker. O valor padrão é 10 segundos,
+            //o que é razoável para a maioria dos sistemas monitorados, mas pode ser ajustado conforme necessário
+            //para garantir que as checagens sejam concluídas dentro de um tempo aceitável.
+            //**********************************************************************************************************************
+            sql.Append("timeout_seconds SMALLINT NOT NULL DEFAULT 10, ");
+            //**********************************************************************************************************************
+            //Número máximo de checagens concorrentes que o worker pode realizar. O valor padrão é 10, o que
+            //é um bom ponto de partida para a maioria dos sistemas,
+            //**********************************************************************************************************************
+            sql.Append("max_concurrent_checks SMALLINT NOT NULL DEFAULT 10, ");
+            //**********************************************************************************************************************
+            //Número máximo de tentativas de checagem em caso de falha. O valor padrão é 1, o que significa que o worker
+            //**********************************************************************************************************************
+            sql.Append("max_retries SMALLINT NOT NULL DEFAULT 0, ");
+            //**********************************************************************************************************************
+            //Tempo de espera em milissegundos entre as tentativas de checagem em caso de falha. O valor padrão é 1000 ms (1 segundo)
+            //**********************************************************************************************************************
+            sql.Append("delay_between_retries_ms SMALLINT NOT NULL DEFAULT 0, ");
+            sql.Append("updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(), ");
+            sql.Append("user_uuid_last_modified UUID REFERENCES users(id) ON DELETE SET NULL  ");
+            sql.Append("); ");
+
+            //**********************************************************************************************************************
+            //Insere uma configuração padrão para o worker, garantindo que haja uma linha
+            //na tabela com os valores padrão difinidos
+            //**********************************************************************************************************************
+            sql.Append("INSERT INTO worker_config DEFAULT VALUES;");
+
+            await connection.ExecuteAsync(sql.ToString());
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Tabela de configuração do worker criada com sucesso! ");
+            Console.WriteLine();
+            Console.ResetColor();
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Erro ao criar tabela de configuração do worker no sistema: {ex.Message} ");
+        }
+    }
     public async Task CreateTables()
     {
         await CreateUsersTable();
         await CreateMonitoredSystemTable();
         await CreateSystemChecksTable();
+        await CreateWorkerConfigTable();
     }
 }

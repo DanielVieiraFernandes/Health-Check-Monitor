@@ -15,7 +15,9 @@ public static class StringsExt
         for (int i = 0; i < str.Length; i++)
         {
             char c = str[i];
-            if (char.IsUpper(c))
+            char prevC = i > 0 ? str[i - 1] : ' ';
+            char nextC = i + 1 < str.Length ? str[i + 1] : ' ';
+            if (char.IsUpper(c) && (!char.IsUpper(prevC) || !char.IsUpper(nextC)))
             {
                 // Adiciona um underscore antes de letras maiúsculas, exceto para a primeira letra
                 if (i > 0)
@@ -24,7 +26,7 @@ public static class StringsExt
             }
             else
             {
-                stringBuilder.Append(c);
+                stringBuilder.Append(char.ToLower(c));
             }
         }
         return stringBuilder.ToString();
