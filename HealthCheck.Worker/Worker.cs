@@ -54,7 +54,7 @@ public class Worker : BackgroundService
                 //Caso haja falha ao obter a configuração do worker durante mais de 3 ciclos, interrompe a execução do worker
                 //para evitar loop de erros e sobrecarga no sistema
                 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                if (_refreshConfigLock > 3)
+                if (_refreshConfigLock > 2)
                     throw new InvalidOperationException("Falha ao obter a configuração do worker após várias tentativas.");
 
 
@@ -68,7 +68,7 @@ public class Worker : BackgroundService
                 {
                     //Aguarda um tempo antes de tentar novamente para evitar loop de erros
                     _logger.LogError("Config do worker não está disponível. Verifique os logs anteriores para identificar falhas na obtenção da configuração.");
-                    await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
+                    await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
                     _refreshConfigLock++;
                     continue;
                 }
@@ -78,17 +78,26 @@ public class Worker : BackgroundService
                 //============================================================================================
                 // Executa o monitoramento dos sistemas pendentes de verificação.
                 //============================================================================================
-                await _monitoringServices.ExecutarMonitoramento(stoppingToken, _workerConfig);
+                await _monitoringServices.ExecuteMonitoring(stoppingToken, _workerConfig);
 
                 if (_logger.IsEnabled(LogLevel.Information))
                 {
                     _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
                 }
+
+                //============================================================================================
+                //Executa a limpeza dos registros de monitoramento antigos para evitar acúmulo excessivo
+                //de dados no banco
+                //============================================================================================
+                await _monitoringServices.ExecuteDBCleanup(stoppingToken);
             }
             catch (Exception ex)
             {
                 _logger.LogCritical(ex, "Erro crítico no worker. A execução será interrompida.");
-                break;
+                //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+                //Derruba o serviço para enviar uma notificação para o desenvolvedor!
+                //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+                throw;
             }
 
             //Aguarda os segundos parametrizados antes de iniciar o próximo ciclo de monitoramento
@@ -113,7 +122,11 @@ public class Worker : BackgroundService
             if (result.IsFailure)
             {
                 WorkerConfig? config;
+
+                //Busca a seção de configurações 
                 var settingsSection = _configuration.GetSection("Settings");
+
+                //Declara as chaves obrigatórias para validar a existência e integridade da configuração no appsettings.json
                 string[] requiredSettingKeys =
                 [
                     nameof(WorkerConfig.MonitoringIntervalSeconds),
@@ -123,16 +136,22 @@ public class Worker : BackgroundService
                 nameof(WorkerConfig.DelayBetweenRetriesMs)
                 ];
 
+                //Verifica se a seção de configurações existe, e, caso não exista,
+                //define a configuração como nula para forçar um erro
                 if (!settingsSection.Exists())
                 {
                     config = null;
                 }
+                //Caso a seção exista
                 else
                 {
                     bool hasAllRequiredSettings = true;
 
+                    //Verifica se todas as chaves obrigatórias estão presentes e possuem valores válidos (não nulos ou vazios)
                     foreach (var key in requiredSettingKeys)
                     {
+                        //Caso não encontre a chave ou o valor seja nulo, vazio ou composto apenas por espaços em branco,
+                        //considera que a configuração é inválida
                         if (string.IsNullOrWhiteSpace(settingsSection[key]))
                         {
                             hasAllRequiredSettings = false;
@@ -140,16 +159,21 @@ public class Worker : BackgroundService
                         }
                     }
 
+                    //Se a configuração for considerada inválida por falta de chaves obrigatórias ou valores inválidos,
+                    //define a configuração como nula para forçar um erro
                     if (!hasAllRequiredSettings)
                     {
                         config = null;
                     }
                     else
                     {
+                        //Caso a configuração seja considerada válida, tenta fazer o bind dos valores para o
+                        //objeto de configuração do worker.
                         try
                         {
                             config = settingsSection.Get<WorkerConfig?>();
                         }
+                        //Se não conseguir fazer o bind por algum motivo, define a configuração como nula para forçar um erro
                         catch
                         {
                             config = null;
@@ -159,8 +183,12 @@ public class Worker : BackgroundService
 
                 _workerConfig = config;
 
-                if (config == null)
+                //Se a configuração for nula, lança uma exceção para ser capturada no catch externo, onde será registrado um log de aviso
+                if (_workerConfig == null)
                     throw new InvalidOperationException("Não foi possível carregar a configuração do worker.");
+
+                _logger.LogInformation("Config do worker atualizada. Intervalo={Intervalo}s", _workerConfig.MonitoringIntervalSeconds);
+                _logger.LogWarning("Config do worker atualizada por fallback, verificar o status do banco de dados para entender o motivo.");
 
                 return;
             }

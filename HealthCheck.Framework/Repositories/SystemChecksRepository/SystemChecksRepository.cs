@@ -11,6 +11,25 @@ public class SystemChecksRepository(DatabaseService databaseService) : ISystemCh
 {
     private const string TABLE_NAME = "system_checks";
 
+    public async Task Clean(NpgsqlConnection? connectionnAlreadyCreated = null)
+    {
+        var connection = connectionnAlreadyCreated ?? await databaseService.CreateNewPgConnection();
+
+        if (connection == null)
+            throw new Exception("Falha ao criar conexão com o banco de dados.");
+
+        //=========================================================================================================================================================================
+        //Realiza uma limpeza na tabela das checagens de sistema, contando a partir de 7 dias atrás em diante, para garantir que não haja uma sobrecarga
+        //de dados na tabela, o que poderia prejudicar a performance do sistema
+        //=========================================================================================================================================================================
+        string sql = $@"DELETE FROM {TABLE_NAME} WHERE checked_at < (NOW() - INTERVAL '7 days')";
+
+        await connection.ExecuteAsync(sql);
+
+        if (connectionnAlreadyCreated == null)
+            await connection.DisposeAsync();
+    }
+
     public async Task Create(SystemCheck systemCheck, NpgsqlConnection? connectionnAlreadyCreated = null)
     {
         var connection = connectionnAlreadyCreated ?? await databaseService.CreateNewPgConnection();
@@ -193,6 +212,27 @@ public class SystemChecksRepository(DatabaseService databaseService) : ISystemCh
         string sql = QueryBuilder.BuildSelectQuery(TABLE_NAME, whereClause);
 
         var result = await connection.QueryFirstOrDefaultAsync<SystemCheck>(sql, new { Id = id });
+
+        if (connectionnAlreadyCreated == null)
+            await connection.DisposeAsync();
+
+        return result;
+    }
+
+    public async Task<SystemCheck?> GetLastBySystemId(Guid systemId, NpgsqlConnection? connectionnAlreadyCreated = null)
+    {
+        var connection = connectionnAlreadyCreated ?? await databaseService.CreateNewPgConnection();
+
+        if (connection == null)
+            throw new Exception("Falha ao criar conexão com o banco de dados.");
+
+        string whereClause = "system_id = @SystemId";
+
+        string sql = QueryBuilder.BuildSelectQuery(TABLE_NAME, whereClause);
+
+        sql += " ORDER BY checked_at DESC LIMIT 1";
+
+        var result = await connection.QueryFirstOrDefaultAsync<SystemCheck?>(sql, new { SystemId = systemId });
 
         if (connectionnAlreadyCreated == null)
             await connection.DisposeAsync();

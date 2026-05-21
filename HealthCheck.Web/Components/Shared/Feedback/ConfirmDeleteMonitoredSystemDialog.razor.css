@@ -11,3 +11,11 @@
 .confirm-delete-url {
     overflow-wrap: anywhere;
 }
+
+:global(.mud-overlay.mud-overlay-dialog) {
+    z-index: 2199 !important;
+}
+
+:global(.mud-dialog-container) {
+    z-index: 2200 !important;
+}

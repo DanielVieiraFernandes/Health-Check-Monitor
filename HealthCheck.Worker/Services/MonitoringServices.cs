@@ -16,6 +16,8 @@ public class MonitoringServices
     private readonly IHttpClientFactory _httpClientFactory;
     private MonitoredSystemService? _monitoredSystemService = null;
     private SystemChecksService? _systemCheckService = null;
+    private DateTime _cleaningDBAt = DateTime.Now;
+
 
     public MonitoringServices(ILogger<Worker> logger,
                               IServiceScopeFactory scopeFactory,
@@ -33,7 +35,7 @@ public class MonitoringServices
     /// <param name="stoppingToken"></param>
     /// <param name="workerConfig"></param>
     /// <returns></returns>
-    public async Task ExecutarMonitoramento(CancellationToken stoppingToken, WorkerConfig workerConfig)
+    public async Task ExecuteMonitoring(CancellationToken stoppingToken, WorkerConfig workerConfig)
     {
         try
         {
@@ -169,7 +171,40 @@ public class MonitoringServices
         }
         catch (Exception ex)
         {
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            //TODO: deve enviar uma notificação para os responsáveis informando sobre a falha no processamento das URLs pendentes
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             _logger.LogError(ex, "Falha ao processar URLs pendentes no worker.");
+        }
+    }
+
+    public async Task ExecuteDBCleanup(CancellationToken stoppingToken)
+    {
+        //***********************************************************************************************************************
+        //A cada 7 dias, o worker deve realizar uma limpeza dos dados antigos de checagens no banco de dados para evitar acúmulo
+        //excessivo de dados e garantir a performance do sistema. Os registros serão mantidos por no máximo 7 dias e depois
+        //serão excluídos permanentemente.
+        //***********************************************************************************************************************
+        if (Math.Abs(_cleaningDBAt.Day - DateTime.Now.Day) >= 7)
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var systemChecksService = scope.ServiceProvider
+                    .GetRequiredService<HealthCheck.Framework.Services.Database.SystemChecksService.SystemChecksService>();
+
+                await systemChecksService.CleanOldChecks();
+                _cleaningDBAt = DateTime.Now;
+
+                _logger.LogInformation("Limpeza de dados antigos realizada com sucesso.");
+            }
+            catch (Exception ex)
+            {
+                //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //TODO: deve enviar uma notificação para os responsáveis informando sobre a falha na limpeza de dados antigos
+                //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                _logger.LogError(ex, "Falha ao realizar a limpeza de dados antigos.");
+            }
         }
     }
 
@@ -181,7 +216,7 @@ public class MonitoringServices
         byte retryCount = 0;
         bool isSuccess = true;
 
-        while (retryCount < workerConfig.MaxRetries)
+        do
         {
             retryCount++;
 
@@ -250,7 +285,8 @@ public class MonitoringServices
             }
 
             await Task.Delay(workerConfig.DelayBetweenRetriesMs);
-        }
+
+        } while (retryCount < workerConfig.MaxRetries);
 
         return isSuccess;
     }

@@ -1,4 +1,5 @@
-﻿using HealthCheck.Framework.Helpers;
+﻿using FluentValidation.Results;
+using HealthCheck.Framework.Helpers;
 using HealthCheck.Framework.Models;
 using HealthCheck.Framework.Repositories.SystemChecksRepository;
 using HealthCheck.Framework.Services.Database.SystemChecksService.Filters;
@@ -63,10 +64,32 @@ public class SystemChecksService(ISystemChecksRepository systemChecksRepository)
         return Result<List<SystemCheck>>.AsSuccess(systemChecks);
     }
 
+    public async Task<Result<SystemCheck?>> GetLastBySystemId(Guid systemId)
+    {
+        var systemCheck = await systemChecksRepository.GetLastBySystemId(systemId);
+
+        if (systemCheck == null)
+        {
+            ValidationFailure validationFailure = new("SystemCheck", "Recurso não encontrado.");
+
+            return Result<SystemCheck?>.AsFailure(new Failure(HttpStatusCode.NotFound, new() { Errors = [validationFailure] }));
+        }
+
+        return Result<SystemCheck?>.AsSuccess(systemCheck);
+    }
+
     public async Task<Result<SystemCheck?>> GetCheckById(long id)
     {
         var systemCheck = await systemChecksRepository.GetById(id);
+
         return Result<SystemCheck?>.AsSuccess(systemCheck);
+    }
+
+    public async Task<Result<object>> CleanOldChecks()
+    {
+        await systemChecksRepository.Clean();
+
+        return Result<object>.AsSuccess(new { });
     }
 
 }

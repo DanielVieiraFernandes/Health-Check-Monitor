@@ -88,14 +88,35 @@
     overflow: hidden;
 }
 
+:global(.monitored-system-sync-dialog) {
+    z-index: 1300 !important;
+}
+
+:global(.monitored-system-sync-dialog + .e-dlg-overlay) {
+    z-index: 1299 !important;
+}
+
 :global(.monitored-system-sync-dialog .dialog-column) {
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-width: 0;
 }
 
 :global(.monitored-system-sync-dialog .edit-monitored-system-grid) {
     align-items: stretch;
+}
+
+:global(.monitored-system-sync-dialog .top-row-column),
+:global(.monitored-system-sync-dialog .bottom-row-column) {
+    min-width: 0;
+}
+
+:global(.monitored-system-sync-dialog .top-row-card),
+:global(.monitored-system-sync-dialog .bottom-row-card) {
+    height: 100%;
+    width: 100%;
+    min-width: 0;
 }
 
 :global(.monitored-system-sync-dialog .register-card) {
@@ -108,6 +129,29 @@
     background: var(--mud-palette-background-grey) !important;
 }
 
+:global(.monitored-system-sync-dialog .last-check-card) {
+    border-radius: 14px;
+    border: 1px solid var(--mud-palette-divider) !important;
+    background: var(--mud-palette-background-grey) !important;
+    min-width: 0;
+}
+
+:global(.monitored-system-sync-dialog .last-check-card .mud-chip) {
+    font-weight: 600;
+}
+
+:global(.monitored-system-sync-dialog .last-check-response-container) {
+    border-radius: 10px;
+    border: 1px solid var(--mud-palette-divider) !important;
+    background: var(--mud-palette-surface) !important;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: auto;
+    max-height: 220px;
+    min-width: 0;
+}
+
 :global(.monitored-system-sync-dialog .hint-text) {
     margin-top: -6px;
     color: var(--mud-palette-text-secondary) !important;
@@ -117,18 +161,35 @@
     display: block;
     min-width: 0;
     max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+}
+
+:global(.monitored-system-sync-dialog .last-check-response) {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: pre-wrap;
+    box-sizing: border-box;
 }
 
 :global(.monitored-system-sync-dialog .preview-name) {
     display: block;
     min-width: 0;
     max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+}
+
+@media (max-width: 1280px) {
+    :global(.monitored-system-sync-dialog .last-check-response-container) {
+        max-height: 180px;
+    }
 }
 
 :global(.monitored-system-sync-dialog .e-btn.e-primary) {
