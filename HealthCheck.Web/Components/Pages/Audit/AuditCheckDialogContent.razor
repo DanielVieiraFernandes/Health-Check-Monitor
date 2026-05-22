@@ -54,7 +54,9 @@
                             <MudIcon Icon="@Icons.Material.Filled.MarkChatUnread" Color="Color.Info" />
                             <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Mensagem de erro</MudText>
                         </MudStack>
-                        <MudText Typo="Typo.body1" Class="audit-check-message">@GetValue(check.ErrorMessage)</MudText>
+                        <MudPaper Class="audit-check-message-container pa-3" Elevation="0">
+                            <MudText Typo="Typo.body1" Class="audit-check-message">@GetValue(check.ErrorMessage)</MudText>
+                        </MudPaper>
                     </MudStack>
                 </MudPaper>
             }
@@ -67,7 +69,9 @@
                             <MudIcon Icon="@Icons.Material.Filled.DataObject" Color="Color.Primary" />
                             <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Resposta do sistema</MudText>
                         </MudStack>
-                        <MudText Typo="Typo.body1" Class="audit-check-message">@GetValue(check.SystemResponse)</MudText>
+                        <MudPaper Class="audit-check-message-container pa-3" Elevation="0">
+                            <MudText Typo="Typo.body1" Class="audit-check-message">@GetValue(check.SystemResponse)</MudText>
+                        </MudPaper>
                     </MudStack>
                 </MudPaper>
             }

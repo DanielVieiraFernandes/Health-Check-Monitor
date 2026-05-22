@@ -23,6 +23,7 @@
 
 .audit-check-dialog ::deep .mud-stack {
     min-width: 0;
+    max-width: 100%;
 }
 
 .audit-check-grid {
@@ -35,12 +36,27 @@
 
 .audit-check-message {
     display: block;
-    white-space: pre-wrap;
-    word-break: break-all;
-    overflow-wrap: anywhere;
+    width: 100%;
+    min-width: 0;
     max-width: 100%;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    hyphens: auto;
     font-weight: 500;
     line-height: 1.6;
+}
+
+.audit-check-message-container {
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.08);
+    max-width: 100%;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 260px;
 }
 
 .audit-message-card {

@@ -121,10 +121,9 @@
 <SfDialog @ref="monitoredSystemDialog"
           Width="1240px"
           IsModal="true"
-          ShowCloseIcon="true"
           Visible="false"
+          ShowCloseIcon="true"
           CloseOnEscape="true"
-          Target=".layout-root"
           CssClass="@DialogCssClass"
           ZIndex="1300"
           AllowDragging="false">
@@ -250,24 +249,14 @@
     private void OpenMonitoredSystemDialog(Guid? monitoredSystemId = null)
     {
         selectedMonitoredSystemId = monitoredSystemId;
-        monitoredSystemDialog!.ShowAsync();
+        _ = monitoredSystemDialog?.ShowAsync();
     }
 
-    private async Task SaveDialogData()
-    {
-        if (editMonitoredSystem is null)
-            return;
+    private Task SaveDialogData()
+        => editMonitoredSystem is null ? Task.CompletedTask : editMonitoredSystem.SaveAsync();
 
-        await editMonitoredSystem.SaveAsync();
-    }
-
-    private async Task DeleteDialogData()
-    {
-        if (editMonitoredSystem is null)
-            return;
-
-        await editMonitoredSystem.DeleteAsync();
-    }
+    private Task DeleteDialogData()
+        => editMonitoredSystem is null ? Task.CompletedTask : editMonitoredSystem.DeleteAsync();
 
     private async Task CloseDialog()
     {
