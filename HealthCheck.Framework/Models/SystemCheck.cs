@@ -10,13 +10,17 @@ public class SystemCheck : UtilsForModels
     public HealthStatus Status { get; set; }
     public long LatencyMs { get; set; }
     public DateTime CheckedAt { get; set; } = DateTime.Now;
-    public string? Message { get; set; }
+    public string? SystemResponse { get; set; }
+    public string? ErrorMessage { get; set; }
     public string? ExceptionType { get; set; }
     public string? StackTrace { get; set; }
+
+    public string SystemName { get; set; } = string.Empty;
 
     protected override List<string> ignoreAttributes { get; } =
     [
         nameof(SystemCheck.Id),
-        nameof(SystemCheck.CheckedAt)
+        nameof(SystemCheck.CheckedAt),
+        nameof(SystemCheck.SystemName)
     ];
 }

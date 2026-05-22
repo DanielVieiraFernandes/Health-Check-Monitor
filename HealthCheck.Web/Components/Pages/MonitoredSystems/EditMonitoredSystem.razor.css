@@ -5,7 +5,7 @@
 :global(.monitored-system-sync-dialog .e-dialog) {
     border-radius: 18px;
     overflow: hidden;
-    box-shadow: 0 22px 42px rgba(30, 41, 59, 0.24);
+    box-shadow: 0 24px 46px rgba(15, 23, 42, 0.2);
     border: 1px solid var(--mud-palette-divider) !important;
     background: var(--mud-palette-surface) !important;
     color: var(--mud-palette-text-primary) !important;
@@ -88,14 +88,35 @@
     overflow: hidden;
 }
 
+:global(.monitored-system-sync-dialog) {
+    z-index: 1300 !important;
+}
+
+:global(.monitored-system-sync-dialog + .e-dlg-overlay) {
+    z-index: 1299 !important;
+}
+
 :global(.monitored-system-sync-dialog .dialog-column) {
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-width: 0;
 }
 
 :global(.monitored-system-sync-dialog .edit-monitored-system-grid) {
     align-items: stretch;
+}
+
+:global(.monitored-system-sync-dialog .top-row-column),
+:global(.monitored-system-sync-dialog .bottom-row-column) {
+    min-width: 0;
+}
+
+:global(.monitored-system-sync-dialog .top-row-card),
+:global(.monitored-system-sync-dialog .bottom-row-card) {
+    height: 100%;
+    width: 100%;
+    min-width: 0;
 }
 
 :global(.monitored-system-sync-dialog .register-card) {
@@ -108,6 +129,37 @@
     background: var(--mud-palette-background-grey) !important;
 }
 
+:global(.monitored-system-sync-dialog .last-check-card) {
+    border-radius: 14px;
+    border: 1px solid var(--mud-palette-divider) !important;
+    background: var(--mud-palette-background-grey) !important;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+:global(.monitored-system-sync-dialog .last-check-card .mud-stack) {
+    min-width: 0;
+    max-width: 100%;
+}
+
+:global(.monitored-system-sync-dialog .last-check-card .mud-chip) {
+    font-weight: 600;
+}
+
+:global(.monitored-system-sync-dialog .last-check-response-container) {
+    border-radius: 10px;
+    border: 1px solid var(--mud-palette-divider) !important;
+    background: var(--mud-palette-surface) !important;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden !important;
+    overflow-y: auto;
+    max-height: 220px;
+    min-width: 0;
+}
+
 :global(.monitored-system-sync-dialog .hint-text) {
     margin-top: -6px;
     color: var(--mud-palette-text-secondary) !important;
@@ -117,23 +169,42 @@
     display: block;
     min-width: 0;
     max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+}
+
+:global(.monitored-system-sync-dialog .last-check-response) {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+    /* A MÁGICA ACONTECE AQUI: */
+    white-space: pre-wrap !important; /* Mantém os \n originais, mas permite quebrar */
+    word-break: break-word !important; /* Quebra palavras muito longas */
+    overflow-wrap: anywhere !important; /* Força a quebra de hashes/tokens onde for necessário */
 }
 
 :global(.monitored-system-sync-dialog .preview-name) {
     display: block;
     min-width: 0;
     max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+}
+
+@media (max-width: 1280px) {
+    :global(.monitored-system-sync-dialog .last-check-response-container) {
+        max-height: 180px;
+    }
 }
 
 :global(.monitored-system-sync-dialog .e-btn.e-primary) {
     border-radius: 10px;
-    background: linear-gradient(145deg, #4f46e5, #4338ca);
+    background: linear-gradient(145deg, #1d4ed8, #1e40af);
     border-color: transparent;
 }
 
@@ -148,7 +219,7 @@
 :global(.monitored-system-sync-dialog .e-btn.e-danger) {
     border-radius: 10px;
     border-color: transparent !important;
-    background: #dc2626 !important;
+    background: #ef4444 !important;
     color: #fff !important;
     box-shadow: none !important;
     transition: background-color .18s ease, transform .18s ease;
@@ -156,38 +227,38 @@
 
 :global(.monitored-system-sync-dialog .e-btn.e-danger:hover),
 :global(.monitored-system-sync-dialog .e-btn.e-danger:focus-visible) {
-    background: #b91c1c !important;
+    background: #dc2626 !important;
     color: #fff !important;
     transform: translateY(-1px);
 }
 
 :global(.monitored-system-sync-dialog-dark .e-dialog) {
     box-shadow: 0 24px 48px rgba(2, 6, 23, 0.48);
-    border-color: rgba(129, 140, 248, 0.28) !important;
-    background: #111827 !important;
+    border-color: rgba(51, 65, 85, 0.8) !important;
+    background: #0f172a !important;
     color: #e2e8f0 !important;
 }
 
 :global(.monitored-system-sync-dialog-dark .e-dlg-header-content),
 :global(.monitored-system-sync-dialog-dark .e-footer-content) {
-    background: #0f172a !important;
+    background: #0b1120 !important;
     color: #e2e8f0 !important;
-    border-color: rgba(129, 140, 248, 0.28) !important;
+    border-color: rgba(51, 65, 85, 0.8) !important;
 }
 
 :global(.monitored-system-sync-dialog-dark .e-dlg-content) {
-    background: #111827 !important;
+    background: #0f172a !important;
     color: #e2e8f0 !important;
 }
 
 :global(.monitored-system-sync-dialog-dark .register-card) {
-    border-color: rgba(129, 140, 248, 0.34) !important;
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 27, 75, 0.72)) !important;
+    border-color: rgba(51, 65, 85, 0.75) !important;
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.78)) !important;
 }
 
 :global(.monitored-system-sync-dialog-dark .preview-card) {
-    border-color: rgba(129, 140, 248, 0.28) !important;
-    background: linear-gradient(160deg, rgba(15, 23, 42, 0.95), rgba(49, 46, 129, 0.42)) !important;
+    border-color: rgba(51, 65, 85, 0.7) !important;
+    background: linear-gradient(160deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.72)) !important;
 }
 
 :global(.monitored-system-sync-dialog-dark .hint-text),
@@ -200,7 +271,7 @@
 }
 
 :global(.monitored-system-sync-dialog-dark .mud-input-outlined-border) {
-    border-color: rgba(129, 140, 248, 0.45) !important;
+    border-color: rgba(51, 65, 85, 0.7) !important;
 }
 
 :global(.monitored-system-sync-dialog-dark .e-dlg-closeicon-btn .e-btn-icon) {
@@ -208,7 +279,7 @@
 }
 
 :global(.monitored-system-sync-dialog-dark .e-btn.e-danger) {
-    background: #dc2626 !important;
+    background: #ef4444 !important;
     color: #fff !important;
 }
 

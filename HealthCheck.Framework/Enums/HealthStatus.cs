@@ -4,10 +4,12 @@ namespace HealthCheck.Framework.Enums;
 
 public enum HealthStatus
 {
-    [Description("Saudável")]
+    [Description("1 - Saudável")]
     Healthy = 1,
-    [Description("Não saudável")]
+    [Description("2 - Não saudável")]
     Unhealthy = 2,
-    [Description("Desconhecido")]
-    Unknown = 3
+    [Description("3 - Desconhecido")]
+    Unknown = 3,
+    [Description("4 - Todos")]
+    All = 4
 }

@@ -3,6 +3,7 @@ using HealthCheck.Framework.Services.Database;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService;
 using HealthCheck.Framework.Services.Database.SystemChecksService;
 using HealthCheck.Framework.Services.Database.UsersService;
+using HealthCheck.Framework.Services.Database.WorkerConfigService;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -38,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<MonitoredSystemService>();
         services.AddScoped<UsersService>();
         services.AddScoped<SystemChecksService>();
+        services.AddScoped<WorkerConfigService>();
     }
 
     private static void AddCryptographyServices(IServiceCollection services)

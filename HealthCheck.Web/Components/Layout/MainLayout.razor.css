@@ -1,9 +1,9 @@
 .layout-root {
     min-height: 100vh;
     background:
-        radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.12), transparent 40%),
-        radial-gradient(circle at 80% 0%, rgba(14, 165, 233, 0.14), transparent 35%),
-        #f3f6ff;
+        radial-gradient(circle at 20% 15%, rgba(148, 163, 184, 0.18), transparent 45%),
+        radial-gradient(circle at 80% 5%, rgba(203, 213, 225, 0.2), transparent 40%),
+        #eef2f7;
 }
 
 .layout-root ::deep .hc-layout {
@@ -12,17 +12,17 @@
 
 .layout-root ::deep .hc-appbar {
     backdrop-filter: blur(10px);
-    background: rgba(22, 28, 45, 0.78) !important;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+    background: rgba(17, 24, 39, 0.78) !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.26);
 }
 
 .layout-root ::deep .hc-brand-avatar {
-    background: linear-gradient(145deg, rgba(99, 102, 241, 0.8), rgba(14, 165, 233, 0.75));
+    background: linear-gradient(145deg, rgba(37, 99, 235, 0.85), rgba(14, 116, 144, 0.8));
     color: white;
 }
 
 .layout-root ::deep .hc-brand-title {
-    background: -webkit-linear-gradient(45deg, #6366F1, #0EA5E9);
+    background: -webkit-linear-gradient(45deg, #2563eb, #0e7490);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -32,8 +32,8 @@
 }
 
 .layout-root ::deep .hc-drawer {
-    border-right: 1px solid rgba(99, 102, 241, 0.2);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(238, 242, 255, 0.84)) !important;
+    border-right: 1px solid rgba(148, 163, 184, 0.4);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(241, 245, 249, 0.9)) !important;
 }
 
 .layout-root ::deep .hc-nav-menu .mud-nav-link {
@@ -44,7 +44,7 @@
 
 .layout-root ::deep .hc-nav-menu .mud-nav-link:hover {
     transform: translateX(3px);
-    background: rgba(99, 102, 241, 0.14);
+    background: rgba(37, 99, 235, 0.12);
 }
 
 .layout-root ::deep .hc-main-content {
@@ -57,9 +57,9 @@
 
 .error-boundary-card {
     border-radius: 18px;
-    border: 1px solid rgba(248, 113, 113, 0.4);
-    background: linear-gradient(145deg, rgba(255, 241, 242, 0.95), rgba(255, 228, 230, 0.88));
-    box-shadow: 0 18px 38px rgba(244, 63, 94, 0.16);
+    border: 1px solid rgba(248, 113, 113, 0.32);
+    background: linear-gradient(145deg, rgba(254, 242, 242, 0.92), rgba(254, 226, 226, 0.86));
+    box-shadow: 0 18px 38px rgba(244, 63, 94, 0.12);
 }
 
 @media (max-width: 780px) {
@@ -103,29 +103,29 @@
 
 .layout-root.theme-dark {
     background:
-        radial-gradient(circle at 10% 10%, rgba(79, 70, 229, 0.22), transparent 35%),
-        radial-gradient(circle at 90% 20%, rgba(14, 165, 233, 0.2), transparent 30%),
+        radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.22), transparent 35%),
+        radial-gradient(circle at 90% 20%, rgba(14, 116, 144, 0.18), transparent 30%),
         #0b1120;
 }
 
 .layout-root.theme-dark ::deep .hc-appbar {
     background: rgba(2, 6, 23, 0.78) !important;
-    border-bottom-color: rgba(129, 140, 248, 0.26);
+    border-bottom-color: rgba(148, 163, 184, 0.24);
 }
 
 .layout-root.theme-dark ::deep .hc-drawer {
-    border-right-color: rgba(129, 140, 248, 0.22);
-    background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.82)) !important;
+    border-right-color: rgba(148, 163, 184, 0.22);
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.86)) !important;
 }
 
 .layout-root.theme-dark ::deep .hc-nav-menu .mud-nav-link:hover {
-    background: rgba(99, 102, 241, 0.28);
+    background: rgba(37, 99, 235, 0.2);
 }
 
 .layout-root.theme-dark .error-boundary-card {
     border-color: rgba(251, 113, 133, 0.45);
-    background: linear-gradient(145deg, rgba(69, 10, 10, 0.68), rgba(39, 39, 42, 0.86));
-    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(145deg, rgba(69, 10, 10, 0.62), rgba(30, 41, 59, 0.78));
+    box-shadow: 0 18px 38px rgba(2, 6, 23, 0.3);
 }
 
 .layout-root.theme-dark .global-loading-overlay {

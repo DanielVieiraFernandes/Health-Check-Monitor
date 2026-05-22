@@ -98,19 +98,23 @@ public static class MonitoredSystemUrlSafetyValidator
         if (IPAddress.IsLoopback(ipAddress))
             return true;
 
+
+        //************************************************************************************************************************
+        //POR ENQUANTO REMOVI ESSA VALIDAÇÃO, POIS, QUERO QUE SISTEMAS QUE ESTEJAM RODANDO NA MESMA REDE POSSAM SER VERIFICADOS
+        //************************************************************************************************************************
+
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         //Valida se o endereço IP é um endereço privado, como 10.x.x.x, 192.168.x.x, ou 172.16.x.x - 172.31.x.x,
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        if (ipAddress.AddressFamily == AddressFamily.InterNetwork)
-        {
-            var bytes = ipAddress.GetAddressBytes();
-
-            return bytes[0] == 10 ||
-                   bytes[0] == 127 ||
-                   (bytes[0] == 169 && bytes[1] == 254) ||
-                   (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
-                   (bytes[0] == 192 && bytes[1] == 168);
-        }
+        //if (ipAddress.AddressFamily == AddressFamily.InterNetwork)
+        //{
+        //    var bytes = ipAddress.GetAddressBytes();
+        //    return bytes[0] == 10 ||
+        //           bytes[0] == 127 ||
+        //           (bytes[0] == 169 && bytes[1] == 254) ||
+        //           (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
+        //           (bytes[0] == 192 && bytes[1] == 168);
+        //}
 
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         //Valida se o endereço IPv6 é um endereço de link-local, site-local ou Unique Local Address (ULA),
