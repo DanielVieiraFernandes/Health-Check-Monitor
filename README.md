@@ -20,46 +20,54 @@ O `HealthCheck Monitor` é um sistema web criado para registrar sistemas (atualm
 Com o sistema, é possível:
 
 - 📝 Registrar sistemas a serem monitorados
-- ⏱️ Definir o intervalo de verificação
-- 📊 Acompanhar status de saúde dos sistemas cadastrados
-- ⚠️ Preparar terreno para notificações automáticas em falhas
+- ⏱️ Definir parâmetros globais de monitoramento no worker
+- 📊 Acompanhar status de saúde, latência e histórico das checagens
+- 🔐 Controlar acesso por autenticação com cookies
+- 🧩 Centralizar a leitura do dashboard, auditoria, configurações e manutenção dos sistemas
 
-> 🔔 **Próxima evolução planejada:** camada de notificação (e-mail/outros canais) quando houver indisponibilidade ou incerteza de status.
+> 🔔 **Evoluções já incorporadas:** execução recorrente em background, auditoria das checagens, configurações persistidas e atualização automática do painel principal.
 
 ---
 
 ## 🖼️ Telas do Projeto
 
 <p align="center">
-  <img src="docs/images/login.png" alt="Tela de login" width="800" />
+  <img src="docs/images/dashboard-hc.png" alt="Dashboard inicial" width="800" />
 </p>
 
 <p align="center">
-  <img src="docs/images/home.png" alt="Dashboard inicial" width="800" />
+  <img src="docs/images/sistemas-hc.png" alt="Lista de sistemas monitorados" width="800" />
 </p>
 
 <p align="center">
-  <img src="docs/images/sistemas_monitorados.png" alt="Lista de sistemas monitorados" width="800" />
+  <img src="docs/images/edicao-sistema-hc.png" alt="Edicao de um sistema monitorado" width="800" />
 </p>
 
 <p align="center">
-  <img src="docs/images/edicao_sistema_monitorado.png" alt="Edição de sistema monitorado" width="800" />
+  <img src="docs/images/auditoria-hc.png" alt="Auditoria de checagens dos sistemas" width="800" />
+</p>
+
+<p align="center">
+  <img src="docs/images/configuracoes-hc.png" alt="Configurações do worker" width="800" />
 </p>
 
 ## 🏗️ Arquitetura da Solução
 
-O projeto está organizado em três camadas/projetos principais:
+O projeto está organizado em quatro projetos principais:
 
 - 🌐 `HealthCheck.Web`  
-  Interface web em `Blazor Server`, responsável pela experiência do usuário e fluxo de uso.
+	Interface web em `Blazor Server`, responsável pela experiência do usuário, autenticação e navegação entre dashboard, auditoria, configurações e sistemas monitorados.
 
-- 🧩 `HealthCheck.Domain` (`HealthCheck.Framework.csproj`)  
-  Núcleo de regras de negócio, serviços e contratos de acesso a dados.
+- 🧩 `HealthCheck.Framework`  
+  Núcleo compartilhado com modelos, validações, repositórios, serviços de banco e utilitários da solução.
+
+- ⚙️ `HealthCheck.Worker`  
+  Serviço em segundo plano responsável por executar o monitoramento recorrente e a limpeza de registros antigos.
 
 - 🛠️ `HealthCheck.DbUp`  
-  Projeto utilitário para preparação inicial do banco de dados.
+  Projeto utilitário para preparação e evolução inicial do banco de dados.
 
-Essa divisão favorece **manutenção**, **evolução incremental** e **separação de responsabilidades**.
+Essa divisão favorece **manutenção**, **evolução incremental**, **separação de responsabilidades** e **execução assíncrona do monitoramento**.
 
 ---
 
@@ -67,11 +75,13 @@ Essa divisão favorece **manutenção**, **evolução incremental** e **separaç
 
 - `.NET 10` para a base da aplicação
 - `Blazor Server` para a interface web
+- `Worker Service` para monitoramento em background
 - `PostgreSQL` como banco de dados
 - `Dapper` para acesso a dados
 - `FluentValidation` para validações
 - `MudBlazor` e `Syncfusion Blazor` para a experiência visual
 - Autenticação com cookies do Microsoft ASP.NET
+- Atualização periódica do dashboard e auditoria de checagens
 
 ---
 
@@ -80,23 +90,28 @@ Essa divisão favorece **manutenção**, **evolução incremental** e **separaç
 - ✅ Autenticação baseada em cookies do **Microsoft ASP.NET**
 - ✅ Sessão com expiração configurável
 - ✅ Login e logout centralizados via endpoints internos
+- ✅ Controle de acesso nas páginas principais da aplicação
 
 ---
 
 ## 🧭 Status Atual do Projeto
 
 ### ✅ Já implementado
-- Estrutura da aplicação web
-- Cadastro e gerenciamento de sistemas monitorados
-- Persistência de dados
-- Base de validações
-- Camada de feedback visual para o usuário
+- Estrutura completa da aplicação web em Blazor Server
+- Cadastro, edição, exclusão e pesquisa de sistemas monitorados
+- Dashboard com indicadores de disponibilidade, alertas e latência média
+- Auditoria com filtros, detalhamento e visão de histórico das checagens
+- Tela de configurações do worker com persistência dos parâmetros de execução
+- Worker em background com execução recorrente, atualização dinâmica de configuração e limpeza de dados antigos
+- Persistência de dados e repositórios centralizados no projeto compartilhado
+- Base de validações e feedback visual para o usuário
 - Fluxo de autenticação e sessão com cookies
 
 ### 🔄 Em evolução
-- Execução automática recorrente das verificações
-- Notificações de incidentes
-- Recursos avançados de histórico e filtros
+- Evolução das visualizações do dashboard com gráficos e indicadores adicionais
+- Expansão dos recursos de auditoria e análise operacional
+- Camada futura de notificações para indisponibilidades e eventos críticos
+- Aprimoramentos de observabilidade e experiência de uso
 
 ---
 
