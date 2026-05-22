@@ -1,6 +1,7 @@
 using FluentValidation;
+using HealthCheck.Framework.Services.Database.MonitoredSystemService.Filters;
 
-namespace HealthCheck.Framework.Services.Database.MonitoredSystemService.Filters;
+namespace HealthCheck.Framework.Services.Database.MonitoredSystemService.Validators;
 
 public class SearchFiltersMonitoredSystemsValidator : AbstractValidator<SearchFiltersMonitoredSystems>
 {

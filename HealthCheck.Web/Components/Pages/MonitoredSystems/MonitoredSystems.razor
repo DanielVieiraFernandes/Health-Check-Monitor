@@ -6,7 +6,7 @@
 
 <PageTitle>Sistemas Monitorados</PageTitle>
 
-<div class="monitored-systems-page">
+<div class="monitored-systems-page @(IsDarkMode ? "theme-dark" : "theme-light")">
     <MudPaper Class="page-hero pa-5 mb-4" Elevation="0">
         <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
         <MudStack Spacing="0">
@@ -79,7 +79,7 @@
             {
                 <MudItem xs="12" sm="6" lg="4">
                     <div class="system-card-shell" role="button" tabindex="0" @onclick="() => OpenMonitoredSystemDialog(system.Id)">
-                        <MudPaper Class="system-card pa-4" Elevation="2">
+                        <MudPaper Class="@SystemCardClass" Elevation="2">
                             <MudStack Spacing="2">
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                                     <MudText Typo="Typo.h6" Class="font-weight-bold system-name" Title="@system.Name">@system.Name</MudText>
@@ -119,14 +119,13 @@
 </div>
 
 <SfDialog @ref="monitoredSystemDialog"
-          Width="980px"
+          Width="1240px"
           IsModal="true"
-          ShowCloseIcon="true"
           Visible="false"
+          ShowCloseIcon="true"
           CloseOnEscape="true"
-          Target=".layout-root"
           CssClass="@DialogCssClass"
-          ZIndex="1100"
+          ZIndex="1300"
           AllowDragging="false">
     <DialogTemplates>
         <Header>
@@ -154,10 +153,15 @@
         <DialogButton Content="@SaveButtonText" IsPrimary="true" CssClass="e-primary" Disabled="loadingState.IsLoading" OnClick="SaveDialogData"></DialogButton>
     </DialogButtons>
 
+    <DialogPositionData X="center" Y="center" />
+
     <DialogEvents OnClose="CloseDialog" />
 </SfDialog>
 
 @code {
+
+    [CascadingParameter(Name = "IsDarkMode")]
+    public bool IsDarkMode { get; set; }
 
     [CascadingParameter(Name = "UserSession")]
     public UserSessionInfo? UserSession { get; set; }
@@ -171,6 +175,8 @@
 
     private string DialogCssClass => UserSession?.PreferredTheme == ThemeOptions.Dark ? "monitored-system-sync-dialog monitored-system-sync-dialog-dark" : "monitored-system-sync-dialog";
     private string SaveButtonText => selectedMonitoredSystemId == null ? "Registrar sistema" : "Salvar alterações";
+
+    private string SystemCardClass => IsDarkMode ? "system-card system-card-dark pa-4" : "system-card system-card-light pa-4";
 
 
     private List<MonitoredSystem> monitoredSystems = [];
@@ -243,24 +249,14 @@
     private void OpenMonitoredSystemDialog(Guid? monitoredSystemId = null)
     {
         selectedMonitoredSystemId = monitoredSystemId;
-        monitoredSystemDialog!.ShowAsync();
+        _ = monitoredSystemDialog?.ShowAsync();
     }
 
-    private async Task SaveDialogData()
-    {
-        if (editMonitoredSystem is null)
-            return;
+    private Task SaveDialogData()
+        => editMonitoredSystem is null ? Task.CompletedTask : editMonitoredSystem.SaveAsync();
 
-        await editMonitoredSystem.SaveAsync();
-    }
-
-    private async Task DeleteDialogData()
-    {
-        if (editMonitoredSystem is null)
-            return;
-
-        await editMonitoredSystem.DeleteAsync();
-    }
+    private Task DeleteDialogData()
+        => editMonitoredSystem is null ? Task.CompletedTask : editMonitoredSystem.DeleteAsync();
 
     private async Task CloseDialog()
     {

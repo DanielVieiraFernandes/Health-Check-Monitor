@@ -1,9 +1,9 @@
 @inject LoadingState loadingState
 @inject IDialogService DialogService
 
-<MudGrid Class="edit-monitored-system-grid">
-    <MudItem xs="14" lg="7" Class="dialog-column">
-        <MudPaper Class="register-card pa-5" Elevation="0">
+<MudGrid Class="edit-monitored-system-grid" Spacing="3">
+    <MudItem xs="12" lg="12" Class="dialog-column top-row-column">
+        <MudPaper Class="register-card top-row-card pa-5" Elevation="0">
             <MudStack Spacing="8">
                 <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Dados do sistema</MudText>
 
@@ -28,12 +28,24 @@
                               Immediate="true"
                               Error="@HasError(nameof(MonitoredSystem.Url))"
                               ErrorText="@GetError(nameof(MonitoredSystem.Url))" />
+
+                <MudTextField @bind-Value="monitoredSystem.Description"
+                              @key="@($"description-{validationVersion}")"
+                              Label="Descrição do sistema"
+                              Variant="Variant.Outlined"
+                              Placeholder="Ex.: API responsável por processar faturamento e emissão de notas"
+                              Lines="4"
+                              MaxLength="1500"
+                              Counter="1500"
+                              Immediate="true"
+                              Error="@HasError(nameof(MonitoredSystem.Description))"
+                              ErrorText="@GetError(nameof(MonitoredSystem.Description))" />
             </MudStack>
         </MudPaper>
     </MudItem>
 
-    <MudItem xs="12" lg="5" Class="dialog-column">
-        <MudPaper Class="preview-card pa-4" Elevation="0">
+  @*   <MudItem xs="12" lg="6" Class="dialog-column top-row-column">
+        <MudPaper Class="preview-card top-row-card pa-4" Elevation="0">
             <MudStack Spacing="2">
                 <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Pré-visualização</MudText>
                 <MudDivider />
@@ -44,6 +56,9 @@
                 <MudText Typo="Typo.caption" Color="Color.Secondary">URL</MudText>
                 <MudText Typo="Typo.body2" Class="preview-url" Title="@GetPreviewUrl()">@GetPreviewUrl()</MudText>
 
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Descrição</MudText>
+                <MudText Typo="Typo.body2">@GetPreviewDescription()</MudText>
+
                 @if (!IsCreateMode)
                 {
                     <MudText Typo="Typo.caption" Color="Color.Secondary">Criado em</MudText>
@@ -51,19 +66,32 @@
                 }
             </MudStack>
         </MudPaper>
+    </MudItem> *@
 
-        @if (!IsCreateMode)
-        {
-            <MudPaper Class="status-card pa-3 mt-3" Elevation="0">
-                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Status atual</MudText>
-                    <MudChip T="string" Label="true" Variant="Variant.Filled" Color="@GetStatusColor(monitoredSystem.LastStatus)">
-                        @monitoredSystem.LastStatus.GetDescription()
-                    </MudChip>
+    @if (!IsCreateMode)
+    {
+        <MudItem xs="12" lg="12" Class="dialog-column bottom-row-column">
+            <MudPaper Class="last-check-card bottom-row-card pa-3" Elevation="0">
+                <MudStack Spacing="1">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Última checagem</MudText>
+                        <MudChip T="string" Label="true" Variant="Variant.Filled" Color="@GetStatusColor(monitoredSystem.LastStatus)">
+                            @monitoredSystem.LastStatus.GetDescription()
+                        </MudChip>
+                    </MudStack>
+                    <MudDivider />
+
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Data</MudText>
+                    <MudText Typo="Typo.body2">@FormatDateTime(monitoredSystem.LastCheckedAt)</MudText>
+
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Resposta da API</MudText>
+                    <MudPaper Class="last-check-response-container pa-2" Elevation="0">
+                        <MudText Typo="Typo.body2" Class="last-check-response">@GetLastCheckResponsePreview()</MudText>
+                    </MudPaper>
                 </MudStack>
             </MudPaper>
-        }
-    </MudItem>
+        </MudItem>
+    }
 </MudGrid>
 
 @code {
@@ -87,6 +115,7 @@
 
     private MonitoredSystem monitoredSystem { get; set; } = new();
     private MonitoredSystem originalMonitoredSystem { get; set; } = new();
+    private string? lastSystemCheckResponse;
     private int validationVersion;
 
     protected override async Task OnInitializedAsync()
@@ -232,6 +261,8 @@
 
             monitoredSystem = result.Success!;
             originalMonitoredSystem = result.Success!.Clone();
+
+            await LoadLastSystemCheckData(monitoredSystemId);
         }
         catch (Exception)
         {
@@ -245,6 +276,23 @@
         {
             loadingState.Hide();
         }
+    }
+
+    private async Task LoadLastSystemCheckData(Guid monitoredSystemId)
+    {
+        var result = await systemChecksService.GetLastBySystemId(monitoredSystemId);
+
+        if (result.IsFailure)
+        {
+            lastSystemCheckResponse = null;
+            return;
+        }
+
+        var lastSystemCheck = result.Success!;
+
+        lastSystemCheckResponse = !string.IsNullOrWhiteSpace(lastSystemCheck.SystemResponse)
+            ? lastSystemCheck.SystemResponse
+            : lastSystemCheck.ErrorMessage;
     }
 
     private async Task ShowFailureDialog(string title, Failure? failure)
@@ -313,8 +361,17 @@
     private string GetPreviewUrl()
         => string.IsNullOrWhiteSpace(monitoredSystem.Url) ? "https://seu-endpoint.com/health" : monitoredSystem.Url;
 
+    private string GetPreviewDescription()
+        => string.IsNullOrWhiteSpace(monitoredSystem.Description) ? "Descrição não informada" : monitoredSystem.Description;
+
+    private string GetLastCheckResponsePreview()
+        => string.IsNullOrWhiteSpace(lastSystemCheckResponse) ? "Não informado" : lastSystemCheckResponse;
+
     private static string FormatDateTime(DateTime value)
         => value <= DateTime.MinValue.AddDays(1) ? "Não informado" : value.ToString("dd/MM/yyyy HH:mm");
+
+    private static string FormatDateTime(DateTime? value)
+        => value == null || value <= DateTime.MinValue.AddDays(1) ? "Não informado" : value.Value.ToString("dd/MM/yyyy HH:mm");
 
     private static Color GetStatusColor(HealthStatus status)
         => status switch

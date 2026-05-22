@@ -1,0 +1,355 @@
+@page "/auditoria"
+@using HealthCheck.Framework.Services.Database.SystemChecksService.Filters
+@using Syncfusion.Blazor.Navigations
+@attribute [Authorize]
+
+<PageTitle>Auditoria</PageTitle>
+
+<div class="audit-page">
+    <MudPaper Class="page-hero pa-5 mb-4" Elevation="0">
+        <MudStack Spacing="3">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h4" Class="font-weight-bold">Auditoria de checagens</MudText>
+                    <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Histórico completo das checagens registradas pelos workers.</MudText>
+                </MudStack>
+                <MudStack Spacing="1" AlignItems="AlignItems.End">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Última atualização</MudText>
+                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold">@currentTime</MudText>
+                </MudStack>
+            </MudStack>
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="audit-search-bar">
+                <MudTextField T="string"
+                              Placeholder="Pesquisar por sistema, retorno, exceção..."
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Class="audit-search-input"
+                              Clearable
+                              @oninput="OnInputSearch"
+                              @onkeydown="OnKeyDownSearchTerm"
+                              />
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Search"
+                           Disabled="loadingState.IsLoading || isSearching"
+                           OnClick="LoadSystemChecks">
+                    Pesquisar
+                </MudButton>
+            </MudStack>
+        </MudStack>
+    </MudPaper>
+
+    <MudPaper Class="surface-card pa-4" Elevation="1">
+        <MudStack Spacing="2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h6" Class="font-weight-bold">Registros de auditoria</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">Use os filtros para encontrar eventos específicos.</MudText>
+                </MudStack>
+                <MudStack Row="true" Spacing="3">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Tune" OnClick="ToggleFilters">
+                        Filtros
+                    </MudButton>
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Download" >
+                        Exportar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Visibility" OnClick="OpenSystemCheckDialog">
+                        Ver detalhes
+                    </MudButton>
+                </MudStack>
+                </MudStack>
+            </MudStack>
+            <MudCollapse Expanded="showFilters">
+                <MudPaper Class="audit-filters-inline pa-4" Elevation="0">
+                    <MudStack Spacing="2">
+                        <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Filtros avançados</MudText>
+                        <MudGrid>
+                            <MudItem xs="12" sm="6" lg="3">
+                                <MudSelect 
+                                    SelectedValuesChanged="(IReadOnlyCollection<HealthStatus> list) => searchSystemChecksFilter.HealthStatusSelected = list.ToList()"
+                                    T="HealthStatus"
+                                    MultiSelection 
+                                    Label="Status" 
+                                    Variant="Variant.Outlined">
+                                    <MudSelectItem Value="HealthStatus.Healthy" >@HealthStatus.Healthy.GetDescription()</MudSelectItem>
+                                    <MudSelectItem Value="HealthStatus.Unhealthy">@HealthStatus.Unhealthy.GetDescription()</MudSelectItem>
+                                    <MudSelectItem Value="HealthStatus.Unknown">@HealthStatus.Unknown.GetDescription()</MudSelectItem>
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="12" sm="6" lg="3">
+                                <MudDateRangePicker Label="Período" Variant="Variant.Outlined" DateRangeChanged="DateRangeChangedCheckingPeriod" Clearable />
+                            </MudItem>
+                            <MudItem xs="12" sm="6" lg="3">
+                                <MudSelect @bind-Value="searchSystemChecksFilter.LatencyPreference"
+                                           Clearable
+                                           T="LatencyPreference?"
+                                           Label="Latência" 
+                                           Variant="Variant.Outlined">
+                                    <MudSelectItem Value="@((LatencyPreference?)LatencyPreference.Highest)">Maiores latências</MudSelectItem>
+                                    <MudSelectItem Value="@((LatencyPreference?)LatencyPreference.Lowest)">Menores latências</MudSelectItem>
+                                </MudSelect>
+                            </MudItem>
+                        </MudGrid>
+                    </MudStack>
+                </MudPaper>
+            </MudCollapse>
+            <MudText Class="font-weight-bold">@summaryText</MudText>
+            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined" Label="true">Total: @totalChecks</MudChip>
+                <MudChip T="string" Color="Color.Error" Variant="Variant.Outlined" Label="true">Críticos: @criticalChecks</MudChip>
+                <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Label="true">Latência média: @averageLatency ms</MudChip>
+            </MudStack>
+
+            <SfGrid @ref="systemChecksGridRef"
+                AdaptiveUIMode="AdaptiveMode.Both"
+                TValue="SystemCheck" 
+                DataSource="systemChecks"
+                Height="460"
+                ContextMenuItems="@gridContextMenuItems"
+                AllowSorting
+                AllowPaging
+                >
+
+                <GridPageSettings PageSize="10" PageSizes="new int[] { 10, 20, 50, 100 }"   />
+
+                <GridColumns>
+                    <GridColumn Field="@nameof(SystemCheck.Id)" HeaderText="#" Width="90" TextAlign="TextAlign.Right" />
+                    <GridColumn Field="@nameof(SystemCheck.SystemName)" HeaderText="Sistema" Width="200" />
+                    <GridColumn Field="@nameof(SystemCheck.Status)" HeaderText="Status" Width="140">
+                        <Template>
+                            @{
+                                var item = (SystemCheck)context;
+                            }
+
+                            <span>@item.Status.GetDescription().Split('-')[1]</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(SystemCheck.LatencyMs)" HeaderText="Latência (ms)" Width="140" TextAlign="TextAlign.Right" />
+                    <GridColumn Field="@nameof(SystemCheck.CheckedAt)" HeaderText="Checado em" Width="180" />
+                    <GridColumn Field="@nameof(SystemCheck.ErrorMessage)" HeaderText="Mensagem" Width="260" />
+                    <GridColumn Field="@nameof(SystemCheck.ExceptionType)" HeaderText="Exceção" Width="180" />
+                </GridColumns>
+                <GridEvents TValue="SystemCheck" RowSelected="OnGridRowSelected" ContextMenuItemClicked="OnContextMenuClick" />
+            </SfGrid>
+        </MudStack>
+    </MudPaper>
+</div>
+
+<SfDialog @ref="systemCheckDialog"
+          Width="980px"
+          IsModal="true"
+          ShowCloseIcon="true"
+          Visible="false"
+          CloseOnEscape="true"
+          Target="body"
+          CssClass="@DialogCssClass"
+          ZIndex="1300"
+          AllowDragging="false">
+    <DialogTemplates>
+        <Header>
+            <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center">
+                <MudIcon Icon="@Icons.Material.Filled.Visibility" Color="Color.Primary" />
+                <MudText Typo="Typo.h6">Detalhes da checagem</MudText>
+            </MudStack>
+        </Header>
+
+        <Content>
+            <AuditCheckDialogContent @key="selectedSystemCheck!.Id" SystemCheck="selectedSystemCheck" />
+        </Content>
+    </DialogTemplates>
+
+    <DialogButtons>
+        <DialogButton Content="Fechar" IsPrimary="true" CssClass="e-primary" OnClick="CloseSystemCheckDialog"></DialogButton>
+    </DialogButtons>
+
+    <DialogPositionData X="center" Y="center" />
+
+    <DialogEvents OnClose="CloseSystemCheckDialog" />
+</SfDialog>
+
+@code {
+    [CascadingParameter(Name = "UserSession")]
+    public UserSessionInfo? UserSession { get; set; }
+
+    SearchSystemChecksFilter searchSystemChecksFilter { get; set; } = new();
+
+    private string currentTime = DateTime.Now.ToString("HH:mm");
+    string summaryText = string.Empty;
+    bool showFilters;
+    bool isSearching;
+    bool isClosingDialog;
+    SfGrid<SystemCheck>? systemChecksGridRef;
+    SfDialog? systemCheckDialog;
+    SystemCheck? selectedSystemCheck;
+    SystemCheck? contextMenuSelection;
+    readonly List<object> gridContextMenuItems =
+    [
+        new ContextMenuItemModel { Text = "Visualizar registro", Id = "view-check" }
+    ];
+
+    List<SystemCheck> systemChecks { get; set; } = [];
+    int totalChecks, criticalChecks, averageLatency;
+
+    protected override async Task OnInitializedAsync()
+    {
+        loadingState.OnChange += () => InvokeAsync(StateHasChanged);
+
+        try
+        {
+            loadingState.Show("Carregando dados..."); 
+
+            searchSystemChecksFilter.UserId = UserSession!.UserId;
+
+            await LoadSystemChecks();
+        }
+        catch (Exception)
+        {
+            snackbar.Add($"Erro ao carregar dados", Severity.Error);
+            throw;
+        }
+        finally
+        {
+            loadingState.Hide();
+        }
+    }
+
+    private async Task LoadSystemChecks()
+    {
+        //Tratamento para impedir várias chamadas desse método ao mesmo tempo
+        if (isSearching)
+            return;
+
+        try
+        {
+            isSearching = true;
+            loadingState.Show("Carregando dados de auditoria..."); 
+
+            var result = await systemChecksService.GetAllChecks(searchSystemChecksFilter);
+
+            if(result.IsFailure)
+            {
+                snackbar.Add($"Ocorreu um erro ao carregar as informações de auditoria", Severity.Error);
+                return;
+            }
+
+            systemChecks = result.Success!;
+
+            //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+            //Altera o texto que informa o período das checagens que foram retornadas
+            //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+            var period = searchSystemChecksFilter.Last24Hours ? "24 horas" : 
+            $"{searchSystemChecksFilter.FromDate?.ToString("dd/MM/yy")} - {searchSystemChecksFilter.ToDate?.ToString("dd/MM/yy")}";
+
+            summaryText = $"Resumo dos registros encontrados no período de {period}";
+
+            totalChecks = systemChecks.Count;
+
+            //***************************************************************************************************************************
+            //OBS: Checagens críticas são todas as checagens cujo o status não seja de um retorno "Saudável" da aplicação
+            //***************************************************************************************************************************
+
+            criticalChecks = systemChecks.Count(sc => sc.Status != HealthStatus.Healthy);
+
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            //Filtro as checagens cujo a latência zeja maior que zero
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            var checksWhereLatencyGreaterThanZero = systemChecks.Where(sc => sc.LatencyMs > 0).ToList();
+
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            //Caso tenha pelo menos uma checagem com latência maior que zero, então realizo o cálculo da média,
+            //do contrário, atribuo zero a média de latência
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            averageLatency = checksWhereLatencyGreaterThanZero.Count > 0 ? (int)checksWhereLatencyGreaterThanZero.Average(c => c.LatencyMs) : 0;
+        }
+        catch (Exception)
+        {
+            snackbar.Add($"Erro ao carregar auditoria", Severity.Error);
+            throw;
+        } 
+        finally
+        {
+            //Limpa as ordenações feitas na grid após uma busca
+            await systemChecksGridRef!.ClearSortingAsync();
+            isSearching = false;
+            loadingState.Hide();
+        }
+    }
+
+    private void ToggleFilters()
+    {
+        showFilters = !showFilters;
+    }
+
+    private string DialogCssClass => UserSession?.PreferredTheme == ThemeOptions.Dark ? "system-check-sync-dialog system-check-sync-dialog-dark" : "system-check-sync-dialog";
+
+    private void OnGridRowSelected(RowSelectEventArgs<SystemCheck> args)
+    {
+        if (args.Data is null)
+            return;
+
+        contextMenuSelection = args.Data;
+    }
+
+    private async Task OnContextMenuClick(ContextMenuClickEventArgs<SystemCheck> args)
+    {
+        //Se selecionar a opção de visualizar uma checagem
+        if (args.Item?.Id == "view-check")
+            await OpenSystemCheckDialog();
+
+    }
+
+    private async Task OpenSystemCheckDialog()
+    {
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //Caso nenhuma linha esteja selecionada, impede o método de continuar, pois nenhuma ação pode ser
+        //executada sem ter um item selecionado.
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        if (contextMenuSelection is null)
+            return;
+
+        selectedSystemCheck = contextMenuSelection;
+
+        await JS.InvokeVoidAsync("toggleBodyScroll", true);
+
+        if (systemCheckDialog is not null)
+            await systemCheckDialog.ShowAsync();       
+    }
+
+    private async Task CloseSystemCheckDialog()
+    {
+        if (isClosingDialog)
+        {
+            return;
+        }
+
+        isClosingDialog = true;
+
+        if (systemCheckDialog is not null)
+        {
+            await systemCheckDialog.HideAsync();
+        }
+
+        await JS.InvokeVoidAsync("toggleBodyScroll", false);
+
+        selectedSystemCheck = null;
+        isClosingDialog = false;
+    }
+
+    private async Task OnInputSearch(Microsoft.AspNetCore.Components.ChangeEventArgs args) =>
+        searchSystemChecksFilter.SearchTerm = args.Value?.ToString() ?? string.Empty;
+ 
+    private async Task OnKeyDownSearchTerm(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter" && !isSearching)
+            await LoadSystemChecks();
+    }
+
+    private async Task DateRangeChangedCheckingPeriod(DateRange dateRange)
+    {
+        searchSystemChecksFilter.FromDate = dateRange?.Start ?? null;
+        searchSystemChecksFilter.ToDate = dateRange?.End ?? null;
+    }
+}

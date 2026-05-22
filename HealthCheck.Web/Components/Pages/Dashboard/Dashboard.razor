@@ -1,5 +1,6 @@
-@page "/dashboard"
+@page "/home"
 @using HealthCheck.Framework.Services.Database.MonitoredSystemService.Filters
+@using HealthCheck.Framework.Services.Database.SystemChecksService.Filters
 @using HealthCheck.Web.Components.Shared.UIModels
 @attribute [Authorize]
 
@@ -114,6 +115,7 @@
     public UserSessionInfo? UserSession { get; set; }
 
     DashboardInfoUI? dashboardInfoUI { get; set; } = null;
+    SearchSystemChecksFilter searchSystemChecksFilter { get; set; } = new();
     SearchFiltersMonitoredSystems searchFiltersMonitoredSystems { get; set; } = new();
 
     //Crio um timer para atualizar as informações do dashboard a cada minuto, garantindo que os dados
@@ -124,13 +126,14 @@
 
     protected override async Task OnInitializedAsync()
     {
-        loadingState.OnChange += HandleLoadingStateChanged;
+        loadingState.OnChange += () => InvokeAsync(StateHasChanged);
 
         try
         {
             loadingState.Show("Carregando...");
 
             searchFiltersMonitoredSystems.UserId = UserSession!.UserId;
+            searchSystemChecksFilter.UserId = UserSession!.UserId;
 
             //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             //Atualiza as informações do dashboard pela primeira vez, antes de inicar o timer
@@ -160,7 +163,6 @@
             // - Sistemas monitorados
             // - Checagens de sistemas
             //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
             var systemsResult = await monitoredSystemService.GetAllMonitoredSystems(searchFiltersMonitoredSystems);
 
             if(systemsResult.IsFailure)
@@ -171,7 +173,7 @@
 
             var systems = systemsResult.Success!;
 
-            var result = await systemCheckService.GetAllChecksByUser(UserSession!.UserId, last24Hours: true);
+            var result = await systemChecksService.GetAllChecks(searchSystemChecksFilter);
 
             if(result.IsFailure)
             {
@@ -187,20 +189,14 @@
 
             dashboardInfoUI.ActiveSystems = systems.Count(s => s.LastStatus == HealthStatus.Healthy);
             dashboardInfoUI.CriticalAlerts = systems.Count(s => s.LastStatus != HealthStatus.Healthy);
-            dashboardInfoUI.Availability = ((decimal)dashboardInfoUI.ActiveSystems / systems.Count()) * 100;
-            dashboardInfoUI.MediumLatency = (int)systemChecks.Sum(sc => sc.LatencyMs) / systemChecks.Count();
-
+            dashboardInfoUI.Availability = systems.Count > 0 ? ((decimal)dashboardInfoUI.ActiveSystems / systems.Count) * 100 : 0;
+            dashboardInfoUI.MediumLatency = systemChecks.Count > 0 ? (int)systemChecks.Where(s => s.LatencyMs > 0).Average(s => s.LatencyMs) : 0;
         }
         catch (Exception)
         {
             snackbar.Add("Ocorreu um erro ao carregar as informações do dashboard", Severity.Error);
             throw;
         }
-    }
-
-    private void HandleLoadingStateChanged()
-    {
-        InvokeAsync(StateHasChanged); 
     }
 
     private async Task RunTimer()

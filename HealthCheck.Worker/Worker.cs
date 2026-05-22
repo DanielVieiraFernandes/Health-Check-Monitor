@@ -1,3 +1,5 @@
+using HealthCheck.Framework.Models;
+using HealthCheck.Framework.Services.Database.WorkerConfigService;
 using HealthCheck.Worker.Services;
 
 namespace HealthCheck.Worker;
@@ -19,42 +21,188 @@ public class Worker : BackgroundService
 {
     private readonly ILogger<Worker> _logger;
     private readonly IConfiguration _configuration;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly MonitoringServices _monitoringServices;
+    private WorkerConfig? _workerConfig = new();
+    private DateTime _nextConfigRefreshAt = DateTime.MinValue;
+    private byte _refreshConfigLock = 0;
+    private static readonly TimeSpan _configRefreshInterval = TimeSpan.FromMinutes(1);
 
-    private readonly int _healthCheckIntervalSeconds;
-
-    public Worker(ILogger<Worker> logger, IConfiguration configuration, MonitoringServices monitoringServices)
+    public Worker(ILogger<Worker> logger,
+                  IConfiguration configuration,
+                  IServiceScopeFactory scopeFactory,
+                  MonitoringServices monitoringServices)
     {
         _logger = logger;
         _configuration = configuration;
+        _scopeFactory = scopeFactory;
         _monitoringServices = monitoringServices;
-
-        _healthCheckIntervalSeconds = configuration.GetValue<int>("Settings:HealthCheckIntervalSeconds");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //Ao iniciar o worker, força a atualização da configuração para garantir que esteja utilizando os parâmetros mais recentes
+        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        await RefreshConfigIfNeeded(stoppingToken, force: true);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //Caso haja falha ao obter a configuração do worker durante mais de 3 ciclos, interrompe a execução do worker
+                //para evitar loop de erros e sobrecarga no sistema
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                if (_refreshConfigLock > 2)
+                    throw new InvalidOperationException("Falha ao obter a configuração do worker após várias tentativas.");
+
+
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //A cada ciclo, verifica se é necessário atualizar a configuração do worker, garantindo que mudanças sejam aplicadas
+                //sem necessidade de reiniciar o serviço.
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                await RefreshConfigIfNeeded(stoppingToken, force: false);
+
+                if (_workerConfig == null)
+                {
+                    //Aguarda um tempo antes de tentar novamente para evitar loop de erros
+                    _logger.LogError("Config do worker não está disponível. Verifique os logs anteriores para identificar falhas na obtenção da configuração.");
+                    await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
+                    _refreshConfigLock++;
+                    continue;
+                }
+
+                _refreshConfigLock = 0;
+
                 //============================================================================================
                 // Executa o monitoramento dos sistemas pendentes de verificação.
                 //============================================================================================
-                await _monitoringServices.ExecutarMonitoramento(stoppingToken);
+                await _monitoringServices.ExecuteMonitoring(stoppingToken, _workerConfig);
 
                 if (_logger.IsEnabled(LogLevel.Information))
                 {
                     _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
                 }
+
+                //============================================================================================
+                //Executa a limpeza dos registros de monitoramento antigos para evitar acúmulo excessivo
+                //de dados no banco
+                //============================================================================================
+                await _monitoringServices.ExecuteDBCleanup(stoppingToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Falha ao processar o ciclo do worker.");
+                _logger.LogCritical(ex, "Erro crítico no worker. A execução será interrompida.");
+                //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+                //Derruba o serviço para enviar uma notificação para o desenvolvedor!
+                //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+                throw;
             }
 
             //Aguarda os segundos parametrizados antes de iniciar o próximo ciclo de monitoramento
-            await Task.Delay(TimeSpan.FromSeconds(_healthCheckIntervalSeconds), stoppingToken);
+            await Task.Delay(TimeSpan.FromSeconds(_workerConfig!.MonitoringIntervalSeconds), stoppingToken);
+        }
+    }
+
+    private async Task RefreshConfigIfNeeded(CancellationToken ct, bool force = false)
+    {
+        if (!force && DateTime.UtcNow < _nextConfigRefreshAt && _workerConfig != null) return;
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var workerConfigService = scope.ServiceProvider.GetRequiredService<WorkerConfigService>();
+
+            var result = await workerConfigService.Get();
+
+            //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+            //Caso haja falha ao obter a configuração do banco, faz um fallback para a configuração presente no appsettings.json
+            //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+            if (result.IsFailure)
+            {
+                WorkerConfig? config;
+
+                //Busca a seção de configurações 
+                var settingsSection = _configuration.GetSection("Settings");
+
+                //Declara as chaves obrigatórias para validar a existência e integridade da configuração no appsettings.json
+                string[] requiredSettingKeys =
+                [
+                    nameof(WorkerConfig.MonitoringIntervalSeconds),
+                nameof(WorkerConfig.TimeoutSeconds),
+                nameof(WorkerConfig.MaxConcurrentChecks),
+                nameof(WorkerConfig.MaxRetries),
+                nameof(WorkerConfig.DelayBetweenRetriesMs)
+                ];
+
+                //Verifica se a seção de configurações existe, e, caso não exista,
+                //define a configuração como nula para forçar um erro
+                if (!settingsSection.Exists())
+                {
+                    config = null;
+                }
+                //Caso a seção exista
+                else
+                {
+                    bool hasAllRequiredSettings = true;
+
+                    //Verifica se todas as chaves obrigatórias estão presentes e possuem valores válidos (não nulos ou vazios)
+                    foreach (var key in requiredSettingKeys)
+                    {
+                        //Caso não encontre a chave ou o valor seja nulo, vazio ou composto apenas por espaços em branco,
+                        //considera que a configuração é inválida
+                        if (string.IsNullOrWhiteSpace(settingsSection[key]))
+                        {
+                            hasAllRequiredSettings = false;
+                            break;
+                        }
+                    }
+
+                    //Se a configuração for considerada inválida por falta de chaves obrigatórias ou valores inválidos,
+                    //define a configuração como nula para forçar um erro
+                    if (!hasAllRequiredSettings)
+                    {
+                        config = null;
+                    }
+                    else
+                    {
+                        //Caso a configuração seja considerada válida, tenta fazer o bind dos valores para o
+                        //objeto de configuração do worker.
+                        try
+                        {
+                            config = settingsSection.Get<WorkerConfig?>();
+                        }
+                        //Se não conseguir fazer o bind por algum motivo, define a configuração como nula para forçar um erro
+                        catch
+                        {
+                            config = null;
+                        }
+                    }
+                }
+
+                _workerConfig = config;
+
+                //Se a configuração for nula, lança uma exceção para ser capturada no catch externo, onde será registrado um log de aviso
+                if (_workerConfig == null)
+                    throw new InvalidOperationException("Não foi possível carregar a configuração do worker.");
+
+                _logger.LogInformation("Config do worker atualizada. Intervalo={Intervalo}s", _workerConfig.MonitoringIntervalSeconds);
+                _logger.LogWarning("Config do worker atualizada por fallback, verificar o status do banco de dados para entender o motivo.");
+
+                return;
+            }
+
+            _workerConfig = result.Success!;
+            _logger.LogInformation("Config do worker atualizada. Intervalo={Intervalo}s", _workerConfig.MonitoringIntervalSeconds);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Falha ao atualizar config do banco. Mantendo última config em memória.");
+        }
+        finally
+        {
+            _nextConfigRefreshAt = DateTime.UtcNow.Add(_configRefreshInterval);
         }
     }
 

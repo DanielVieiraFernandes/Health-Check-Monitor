@@ -13,7 +13,11 @@ else if (ErrorContent is not null)
 @code {
     protected override Task OnErrorAsync(Exception ex)
     {
+        //Grava o log da exceção
         RecordLog.RecordExceptionLog(ex);
+        //Esconde o loading caso esteja visível (apenas para garantir que o usuário não fique preso em um loading infinito)
+        loadingState.Hide();
+
         return Task.CompletedTask;
     }
 }
