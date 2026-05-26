@@ -24,12 +24,17 @@ public class DatabaseService(NpgsqlConnection connection)
             sql.Append("user_id UUID REFERENCES users(id) ON DELETE CASCADE, ");
             sql.Append("name VARCHAR(255) NOT NULL, ");
             sql.Append("description TEXT NOT NULL DEFAULT '', ");
-            sql.Append("url TEXT UNIQUE NOT NULL, ");
+            sql.Append("url TEXT NOT NULL, ");
             sql.Append("last_status INT NOT NULL DEFAULT 1, ");
             sql.Append("last_checked_at TIMESTAMP WITHOUT TIME ZONE, ");
             sql.Append("history TEXT NOT NULL DEFAULT '', ");
             sql.Append("created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),");
-            sql.Append("updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW()");
+            sql.Append("updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(), ");
+            //*************************************************************************************************************************************
+            //Cria uma restrição de url POR USUÁRIO, ou seja, um mesmo usuário não pode cadastrar dois sistemas monitorados com a mesma url,
+            //mas um usuário diferente pode cadastrar um sistema monitorado com a mesma url, já que são usuários diferentes
+            //*************************************************************************************************************************************
+            sql.Append("UNIQUE(user_id, url)");
             sql.Append("); ");
 
             await connection.ExecuteAsync(sql.ToString());
@@ -121,15 +126,6 @@ public class DatabaseService(NpgsqlConnection connection)
         //DESEMPENHO DOS SISTEMAS.
         //**********************************************************************************************************************
 
-        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        //TODO:A idéia é que haja uma rotina para que possa ser executada uma limpeza periódica dessa tabela, para evitar o acúmulo
-        //excessivo de registros, já que cada checagem realizada gera um novo registro nessa tabela, e dependendo da frequência
-        //das checagens, isso pode resultar em um grande volume de dados ao longo do tempo. 
-        //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-        //TODO: Definir a frequência de limpeza dos registros
-        //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         //OBS: Por enquanto, tenho em mente que para definir os dados do dashboard, iremos utilizar os registros dessa tabela de uma
         //semana e então realizar ir realizando a limpeza dos registros de mais de duas semanas, para sempre manter um histórico
@@ -268,11 +264,78 @@ public class DatabaseService(NpgsqlConnection connection)
             Console.WriteLine($"Erro ao criar tabela de configuração do worker no sistema: {ex.Message} ");
         }
     }
-    public async Task CreateTables()
+    private async Task CreateTables()
     {
         await CreateUsersTable();
         await CreateMonitoredSystemTable();
         await CreateSystemChecksTable();
         await CreateWorkerConfigTable();
+    }
+
+    private async Task CreateDBExtensions()
+    {
+        try
+        {
+            StringBuilder sql = new();
+
+            //****************************************************************************************************************************************************
+            //CRIA A EXTENSÃO pg_trgm, QUE FORNECE FUNÇÕES E OPERADORES PARA TRIGRAMAS, O QUE É ÚTIL PARA REALIZAR BUSCAS DE SIMILARIDADE
+            //E MELHORAR O DESEMPENHO DE CONSULTAS DE TEXTO.
+            //****************************************************************************************************************************************************
+
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine("Criando a extensão pg_trgm...");
+
+            sql.Append("CREATE EXTENSION IF NOT EXISTS pg_trgm;");
+
+            await connection.ExecuteAsync(sql.ToString());
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Extensão pg_trgm criada com sucesso!");
+
+            //****************************************************************************************************************************************************
+            //CRIA A EXTENSÃO unaccent, QUE FORNECE FUNÇÕES PARA REMOVER ACENTOS DE CARACTERES, O QUE É ÚTIL PARA REALIZAR BUSCAS DE TEXTO
+            //SEM SE PREOCUPAR COM ACENTUAÇÃO.
+            //****************************************************************************************************************************************************
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine("Criando a extensão unaccent...");
+
+            sql.Clear();
+            sql.Append("CREATE EXTENSION IF NOT EXISTS unaccent;");
+
+            await connection.ExecuteAsync(sql.ToString());
+
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Extensão unaccent criada com sucesso!");
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Erro ao criar extensões no banco de dados: {ex.Message} ");
+        }
+    }
+
+    public async Task InitDatabase()
+    {
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine("Iniciando configuração do banco de dados... ");
+
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("Criando extensões no banco de dados... ");
+        await CreateDBExtensions();
+
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.DarkBlue;
+        Console.WriteLine("Criando tabelas no banco de dados... ");
+        Console.WriteLine();
+        await CreateTables();
+
+        Console.ForegroundColor = ConsoleColor.DarkGreen;
+        Console.WriteLine("=================================================================================================================");
+        Console.WriteLine("Configuração do banco de dados concluída com sucesso! ");
+        Console.WriteLine("=================================================================================================================");
+        Console.WriteLine();
+        Console.ResetColor();
     }
 }

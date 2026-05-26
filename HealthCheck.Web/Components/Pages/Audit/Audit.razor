@@ -71,6 +71,7 @@
                                 <MudSelect 
                                     SelectedValuesChanged="(IReadOnlyCollection<HealthStatus> list) => searchSystemChecksFilter.HealthStatusSelected = list.ToList()"
                                     T="HealthStatus"
+                                    ToStringFunc="@(status => status.GetDescription())"
                                     MultiSelection 
                                     Label="Status" 
                                     Variant="Variant.Outlined">

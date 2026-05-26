@@ -17,7 +17,7 @@ public class MonitoringServices
     private MonitoredSystemService? _monitoredSystemService = null;
     private SystemChecksService? _systemCheckService = null;
     private DateTime _cleaningDBAt = DateTime.Now;
-
+    private const byte CLEANING_INTERVAL_DAYS = 7;
 
     public MonitoringServices(ILogger<Worker> logger,
                               IServiceScopeFactory scopeFactory,
@@ -181,11 +181,11 @@ public class MonitoringServices
     public async Task ExecuteDBCleanup(CancellationToken stoppingToken)
     {
         //***********************************************************************************************************************
-        //A cada 7 dias, o worker deve realizar uma limpeza dos dados antigos de checagens no banco de dados para evitar acúmulo
+        //A cada X dias, o worker deve realizar uma limpeza dos dados antigos de checagens no banco de dados para evitar acúmulo
         //excessivo de dados e garantir a performance do sistema. Os registros serão mantidos por no máximo 7 dias e depois
         //serão excluídos permanentemente.
         //***********************************************************************************************************************
-        if (Math.Abs(_cleaningDBAt.Day - DateTime.Now.Day) >= 7)
+        if (_cleaningDBAt.AddDays(CLEANING_INTERVAL_DAYS).Day >= DateTime.Now.Day)
         {
             try
             {
@@ -194,6 +194,7 @@ public class MonitoringServices
                     .GetRequiredService<HealthCheck.Framework.Services.Database.SystemChecksService.SystemChecksService>();
 
                 await systemChecksService.CleanOldChecks();
+
                 _cleaningDBAt = DateTime.Now;
 
                 _logger.LogInformation("Limpeza de dados antigos realizada com sucesso.");

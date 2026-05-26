@@ -45,20 +45,44 @@
                            Disabled="loadingState.IsLoading">
                     Pesquisar
                 </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Tune"
+                           OnClick="ToggleFilters"
+                           Disabled="loadingState.IsLoading">
+                    Filtros
+                </MudButton>
             </MudStack>
 
-            <MudDivider />
-
-            @* <MudStack Spacing="1">
-                <MudText Typo="Typo.subtitle2" Class="font-weight-medium">Filtros adicionais (em breve)</MudText>
-                <MudPaper Class="future-filters pa-3" Elevation="0">
-                    <MudStack Row="true" Spacing="1" Class="filter-chip-row">
-                        <MudChip T="string" Variant="Variant.Outlined" Color="Color.Info" Label="true" Disabled="true">Status</MudChip>
-                        <MudChip T="string" Variant="Variant.Outlined" Color="Color.Info" Label="true" Disabled="true">Intervalo</MudChip>
-                        <MudChip T="string" Variant="Variant.Outlined" Color="Color.Info" Label="true" Disabled="true">Última checagem</MudChip>
+            <MudCollapse Expanded="showFilters">
+                <MudPaper Class="monitored-filters-inline pa-4" Elevation="0">
+                    <MudStack Spacing="2">
+                        <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Filtros avançados</MudText>
+                        <MudGrid>
+                            <MudItem xs="12" sm="6" lg="4">
+                                <MudSelect T="HealthStatus"
+                                           SelectedValuesChanged="(IReadOnlyCollection<HealthStatus> list) => searchFiltersMonitoredSystems.StatusSelected = list.ToList()"
+                                           MultiSelection
+                                           ToStringFunc="@(status => status.GetDescription())"
+                                           Label="Status"
+                                           Variant="Variant.Outlined"
+                                           Clearable>
+                                    <MudSelectItem Value="@((HealthStatus)HealthStatus.Healthy)">@HealthStatus.Healthy.GetDescription()</MudSelectItem>
+                                    <MudSelectItem Value="@((HealthStatus)HealthStatus.Unhealthy)">@HealthStatus.Unhealthy.GetDescription()</MudSelectItem>
+                                    <MudSelectItem Value="@((HealthStatus)HealthStatus.Unknown)">@HealthStatus.Unknown.GetDescription()</MudSelectItem>
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="12" sm="6" lg="4">
+                                <MudDateRangePicker Label="Período de criação"
+                                                    Variant="Variant.Outlined"
+                                                    DateRangeChanged="DateRangeChangedMonitoredSystems"
+                                                    Clearable />
+                            </MudItem>
+                        </MudGrid>
                     </MudStack>
                 </MudPaper>
-            </MudStack> *@
+            </MudCollapse>
         </MudStack>
     </MudPaper>
 
@@ -172,6 +196,7 @@
     private EditMonitoredSystem? editMonitoredSystem;
     private MudTextField<string>? textSearchRef;
     private bool isClosingDialog;
+    private bool showFilters;
 
     private string DialogCssClass => UserSession?.PreferredTheme == ThemeOptions.Dark ? "monitored-system-sync-dialog monitored-system-sync-dialog-dark" : "monitored-system-sync-dialog";
     private string SaveButtonText => selectedMonitoredSystemId == null ? "Registrar sistema" : "Salvar alterações";
@@ -204,6 +229,16 @@
         {
             loadingState.Hide();
         }
+    }
+
+    private void ToggleFilters()
+        => showFilters = !showFilters;
+
+    private Task DateRangeChangedMonitoredSystems(DateRange dateRange)
+    {
+        searchFiltersMonitoredSystems.FromDate = dateRange?.Start;
+        searchFiltersMonitoredSystems.ToDate = dateRange?.End;
+        return Task.CompletedTask;
     }
 
     private void HandleLoadingStateChanged()

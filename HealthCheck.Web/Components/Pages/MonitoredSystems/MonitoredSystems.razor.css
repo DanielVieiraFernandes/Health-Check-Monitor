@@ -157,6 +157,12 @@
     width: min(500px, 100%);
 }
 
+.monitored-filters-inline {
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(15, 23, 42, 0.25);
+    border-radius: 10px;
+}
+
 .future-filters {
     border-radius: 12px;
     border: 1px dashed rgba(203, 213, 225, 0.95);
@@ -209,6 +215,12 @@
 :global(.mud-theme-dark) .search-panel {
     border-color: rgba(51, 65, 85, 0.75);
     background: linear-gradient(150deg, rgba(15, 23, 42, 0.86), rgba(30, 41, 59, 0.8));
+}
+
+:global(.theme-dark) .monitored-filters-inline,
+:global(.mud-theme-dark) .monitored-filters-inline {
+    border-color: rgba(51, 65, 85, 0.75);
+    background: rgba(15, 23, 42, 0.7);
 }
 
 :global(.theme-dark) .future-filters,

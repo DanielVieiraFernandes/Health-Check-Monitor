@@ -57,13 +57,6 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
 
         DynamicParameters? parameters = null;
 
-        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        //TODO: Adicionar filtros para tornar a busca mais flexível.
-        // Por exemplo, filtros para buscar apenas os sistemas monitorados que estão com status de saúde "Ruim" ou "Crítico",
-        // ou filtros para buscar os sistemas monitorados que estão com a última verificação feita há mais de X horas, etc.
-        // Esses filtros serão passados através do objeto SearchFiltersMonitoredSystems, que será recebido como parâmetro nesse método.
-        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
         //********************************************************************************
         // Caso o usuário tenha informado algum filtro de busca ou o sistema esteja
         // buscando os sistemas de um usuário específico, aplico os filtros na query
@@ -83,13 +76,13 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
                 parameters.Add("UserId", searchFiltersMonitoredSystems.UserId);
             }
 
-            //********************************************************************************
+            //************************************************************************************************
             // Se especifiquei um status, busco apenas os sistemas monitorados com aquele status
-            //********************************************************************************
-            if (searchFiltersMonitoredSystems.Status != null)
+            //************************************************************************************************
+            if (searchFiltersMonitoredSystems.StatusSelected != null && searchFiltersMonitoredSystems.StatusSelected.Count > 0)
             {
-                sql += " AND last_status = @Status";
-                parameters.Add("Status", searchFiltersMonitoredSystems.Status);
+                sql += " AND last_status = ANY(@Status)";
+                parameters.Add("Status", searchFiltersMonitoredSystems.StatusSelected.Select(s => (int)s).ToArray());
             }
 
             //********************************************************************************
@@ -126,7 +119,19 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
 
                 sql += ")";
             }
+
+            //************************************************************************************************
+            // Se o usuário especificou um intervalo de datas para a criação dos sistemas monitorados,
+            // busco apenas os sistemas monitorados criados dentro desse intervalo
+            //************************************************************************************************
+            if (searchFiltersMonitoredSystems.SearchToDate)
+            {
+                sql += " AND created_at BETWEEN @FromDate AND @ToDate ";
+                parameters.Add("FromDate", searchFiltersMonitoredSystems.FromDate);
+                parameters.Add("ToDate", searchFiltersMonitoredSystems.ToDate);
+            }
         }
+
 
         //------------------------------------------------------------------------------------------------------------------------------------------
         // Por enquanto, deixarei fixo a ordenação pela data de última verificação, em ordem decrescente.

@@ -222,7 +222,9 @@
                 await InvokeAsync(StateHasChanged);
             }
         }
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         //Caso o componente seja descartado, cancelo o timer para evitar que ele continue tentando atualizar o dashboard.
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         catch (OperationCanceledException)
         {
             snackbar.Add("Atualização do dashboard interrompida.", Severity.Info);
