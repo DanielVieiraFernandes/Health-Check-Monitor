@@ -1,5 +1,7 @@
 using HealthCheck.Framework.Models;
 using HealthCheck.Framework.Services.Database.WorkerConfigService;
+using HealthCheck.Framework.Services.Email;
+using HealthCheck.Framework.Services.Email.Models;
 using HealthCheck.Worker.Services;
 
 namespace HealthCheck.Worker;
@@ -22,7 +24,6 @@ public class Worker : BackgroundService
     private readonly ILogger<Worker> _logger;
     private readonly IConfiguration _configuration;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly MonitoringServices _monitoringServices;
     private WorkerConfig? _workerConfig = new();
     private DateTime _nextConfigRefreshAt = DateTime.MinValue;
     private byte _refreshConfigLock = 0;
@@ -30,17 +31,17 @@ public class Worker : BackgroundService
 
     public Worker(ILogger<Worker> logger,
                   IConfiguration configuration,
-                  IServiceScopeFactory scopeFactory,
-                  MonitoringServices monitoringServices)
+                  IServiceScopeFactory scopeFactory)
     {
         _logger = logger;
         _configuration = configuration;
         _scopeFactory = scopeFactory;
-        _monitoringServices = monitoringServices;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await TestSendEmail();
+
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         //Ao iniciar o worker, força a atualização da configuração para garantir que esteja utilizando os parâmetros mais recentes
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -78,7 +79,10 @@ public class Worker : BackgroundService
                 //============================================================================================
                 // Executa o monitoramento dos sistemas pendentes de verificação.
                 //============================================================================================
-                await _monitoringServices.ExecuteMonitoring(stoppingToken, _workerConfig);
+                using var scope = _scopeFactory.CreateScope();
+                var monitoringServices = scope.ServiceProvider.GetRequiredService<MonitoringServices>();
+
+                await monitoringServices.ExecuteMonitoring(stoppingToken, _workerConfig);
 
                 if (_logger.IsEnabled(LogLevel.Information))
                 {
@@ -89,7 +93,7 @@ public class Worker : BackgroundService
                 //Executa a limpeza dos registros de monitoramento antigos para evitar acúmulo excessivo
                 //de dados no banco
                 //============================================================================================
-                await _monitoringServices.ExecuteDBCleanup(stoppingToken);
+                await monitoringServices.ExecuteDBCleanup(stoppingToken);
             }
             catch (Exception ex)
             {
@@ -203,6 +207,30 @@ public class Worker : BackgroundService
         finally
         {
             _nextConfigRefreshAt = DateTime.UtcNow.Add(_configRefreshInterval);
+        }
+    }
+
+    public async Task TestSendEmail()
+    {
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+
+            EmailBody emailBody = new()
+            {
+                To = "fernandesdanielvieira@gmail.com",
+                Name = string.Empty,
+                Subject = "Teste de envio de email - HealthCheck.Worker",
+                Body = "Este é um email de teste enviado pelo método TestSendEmail do Worker. Se você recebeu este email, significa que o serviço de envio de emails está funcionando corretamente.",
+                IsHtml = false
+            };
+
+            await emailService.SendSystemEmail(emailBody);
+        }
+        catch (Exception)
+        {
+
         }
     }
 

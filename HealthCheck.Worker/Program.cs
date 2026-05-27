@@ -1,6 +1,8 @@
+using HealthCheck.Framework.Repositories;
+using HealthCheck.Framework.Services;
 using HealthCheck.Worker;
+using HealthCheck.Worker.Services;
 using Serilog;
-
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //Tive que fazer essas alterações pois os logs não estavam sendo gravados na pasta do executável devido a restrições
 //de permissão do Windows, especialmente quando o serviço é executado com privilégios limitados. Ao definir um diretório
@@ -34,7 +36,10 @@ builder.Services.AddSerilog();
 builder.Services.AddHostedService<Worker>();
 
 //Adiciona todas as dependências externas do Worker
-builder.Services.AddWorkerDependencies(builder.Configuration);
+builder.Services.AddServices(builder.Configuration);
+builder.Services.AddRepositories();
+
+builder.Services.AddScoped<MonitoringServices>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddWindowsService(options =>
