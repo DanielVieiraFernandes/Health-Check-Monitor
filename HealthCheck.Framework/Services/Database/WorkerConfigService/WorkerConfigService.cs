@@ -12,9 +12,6 @@ public class WorkerConfigService(IWorkerConfigRepository workerConfigRepository)
     {
         var workerConfig = await workerConfigRepository.Get();
 
-        if (workerConfig == null)
-            throw new Exception("WorkerConfig not found");
-
         return Result<WorkerConfig>.AsSuccess(workerConfig);
     }
 
