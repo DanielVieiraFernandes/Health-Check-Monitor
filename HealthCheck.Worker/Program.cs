@@ -40,6 +40,7 @@ builder.Services.AddServices(builder.Configuration);
 builder.Services.AddRepositories();
 
 builder.Services.AddScoped<MonitoringServices>();
+builder.Services.AddScoped<NotificationService>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddWindowsService(options =>

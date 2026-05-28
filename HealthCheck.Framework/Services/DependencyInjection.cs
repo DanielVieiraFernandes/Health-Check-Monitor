@@ -56,7 +56,7 @@ public static class DependencyInjection
         //******************************************************************************************************
         //Recupero as credenciais de email no appsettings.json
         //******************************************************************************************************
-        var emailCredentials = configuration.GetSection("EmailSettings").Get<EmailCredentials>();
+        var emailCredentials = configuration.GetSection("EmailSettings:SMTPSettings").Get<EmailCredentials>();
 
         //******************************************************************************************************
         //Recupero a senha das variáveis de ambiente

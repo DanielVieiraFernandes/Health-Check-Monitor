@@ -1,7 +1,5 @@
 using HealthCheck.Framework.Models;
 using HealthCheck.Framework.Services.Database.WorkerConfigService;
-using HealthCheck.Framework.Services.Email;
-using HealthCheck.Framework.Services.Email.Models;
 using HealthCheck.Worker.Services;
 
 namespace HealthCheck.Worker;
@@ -24,6 +22,7 @@ public class Worker : BackgroundService
     private readonly ILogger<Worker> _logger;
     private readonly IConfiguration _configuration;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly NotificationService _notificationService;
     private WorkerConfig? _workerConfig = new();
     private DateTime _nextConfigRefreshAt = DateTime.MinValue;
     private byte _refreshConfigLock = 0;
@@ -36,12 +35,13 @@ public class Worker : BackgroundService
         _logger = logger;
         _configuration = configuration;
         _scopeFactory = scopeFactory;
+
+        using var scope = _scopeFactory.CreateScope();
+        _notificationService = scope.ServiceProvider.GetRequiredService<NotificationService>();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await TestSendEmail();
-
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         //Ao iniciar o worker, força a atualização da configuração para garantir que esteja utilizando os parâmetros mais recentes
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -69,6 +69,19 @@ public class Worker : BackgroundService
                 {
                     //Aguarda um tempo antes de tentar novamente para evitar loop de erros
                     _logger.LogError("Config do worker não está disponível. Verifique os logs anteriores para identificar falhas na obtenção da configuração.");
+
+                    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    //Notifica os administradores sobre a falha na obtenção da configuração,
+                    //caso ainda não tenha sido enviado um email de alerta recentemente
+                    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                    await _notificationService.NotifyAdminAlertAsync(
+                        alertKey: "config-null",
+                        title: "Configuração do Worker indisponível",
+                        summary: "O Worker não conseguiu carregar configurações válidas e fará uma nova tentativa em 10 segundos.",
+                        severity: LogLevel.Error,
+                        exception: null,
+                        ct: stoppingToken);
+
                     await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
                     _refreshConfigLock++;
                     continue;
@@ -98,9 +111,18 @@ public class Worker : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogCritical(ex, "Erro crítico no worker. A execução será interrompida.");
-                //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-                //Derruba o serviço para enviar uma notificação para o desenvolvedor!
-                //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //Envia um email de alerta para o administrador informando sobre o erro crítico que causou a interrupção do worker
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                await _notificationService.NotifyAdminAlertAsync(
+                    alertKey: "worker-critical-stop",
+                    title: "Worker interrompido por erro crítico",
+                    summary: "A execução principal do Worker foi encerrada por uma falha crítica.",
+                    severity: LogLevel.Critical,
+                    exception: ex,
+                    ct: stoppingToken);
+
                 throw;
             }
 
@@ -120,119 +142,95 @@ public class Worker : BackgroundService
 
             var result = await workerConfigService.Get();
 
-            //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-            //Caso haja falha ao obter a configuração do banco, faz um fallback para a configuração presente no appsettings.json
-            //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-            if (result.IsFailure)
-            {
-                WorkerConfig? config;
+            _workerConfig = result.Success!;
+            _logger.LogInformation("Config do worker atualizada. Intervalo={Intervalo}s", _workerConfig.MonitoringIntervalSeconds);
+        }
+        catch (Exception)
+        {
+            WorkerConfig? config;
 
-                //Busca a seção de configurações 
-                var settingsSection = _configuration.GetSection("Settings");
+            //Busca a seção de configurações 
+            var settingsSection = _configuration.GetSection("Settings");
 
-                //Declara as chaves obrigatórias para validar a existência e integridade da configuração no appsettings.json
-                string[] requiredSettingKeys =
-                [
-                    nameof(WorkerConfig.MonitoringIntervalSeconds),
+            //Declara as chaves obrigatórias para validar a existência e integridade da configuração no appsettings.json
+            string[] requiredSettingKeys =
+            [
+                nameof(WorkerConfig.MonitoringIntervalSeconds),
                 nameof(WorkerConfig.TimeoutSeconds),
                 nameof(WorkerConfig.MaxConcurrentChecks),
                 nameof(WorkerConfig.MaxRetries),
                 nameof(WorkerConfig.DelayBetweenRetriesMs)
-                ];
+            ];
 
-                //Verifica se a seção de configurações existe, e, caso não exista,
+            //Verifica se a seção de configurações existe, e, caso não exista,
+            //define a configuração como nula para forçar um erro
+            if (!settingsSection.Exists())
+            {
+                config = null;
+            }
+            //Caso a seção exista
+            else
+            {
+                bool hasAllRequiredSettings = true;
+
+                //Verifica se todas as chaves obrigatórias estão presentes e possuem valores válidos (não nulos ou vazios)
+                foreach (var key in requiredSettingKeys)
+                {
+                    //Caso não encontre a chave ou o valor seja nulo, vazio ou composto apenas por espaços em branco,
+                    //considera que a configuração é inválida
+                    if (string.IsNullOrWhiteSpace(settingsSection[key]))
+                    {
+                        hasAllRequiredSettings = false;
+                        break;
+                    }
+                }
+
+                //Se a configuração for considerada inválida por falta de chaves obrigatórias ou valores inválidos,
                 //define a configuração como nula para forçar um erro
-                if (!settingsSection.Exists())
+                if (!hasAllRequiredSettings)
                 {
                     config = null;
                 }
-                //Caso a seção exista
                 else
                 {
-                    bool hasAllRequiredSettings = true;
-
-                    //Verifica se todas as chaves obrigatórias estão presentes e possuem valores válidos (não nulos ou vazios)
-                    foreach (var key in requiredSettingKeys)
+                    //Caso a configuração seja considerada válida, tenta fazer o bind dos valores para o
+                    //objeto de configuração do worker.
+                    try
                     {
-                        //Caso não encontre a chave ou o valor seja nulo, vazio ou composto apenas por espaços em branco,
-                        //considera que a configuração é inválida
-                        if (string.IsNullOrWhiteSpace(settingsSection[key]))
-                        {
-                            hasAllRequiredSettings = false;
-                            break;
-                        }
+                        config = settingsSection.Get<WorkerConfig?>();
                     }
-
-                    //Se a configuração for considerada inválida por falta de chaves obrigatórias ou valores inválidos,
-                    //define a configuração como nula para forçar um erro
-                    if (!hasAllRequiredSettings)
+                    //Se não conseguir fazer o bind por algum motivo, define a configuração como nula para forçar um erro
+                    catch
                     {
                         config = null;
                     }
-                    else
-                    {
-                        //Caso a configuração seja considerada válida, tenta fazer o bind dos valores para o
-                        //objeto de configuração do worker.
-                        try
-                        {
-                            config = settingsSection.Get<WorkerConfig?>();
-                        }
-                        //Se não conseguir fazer o bind por algum motivo, define a configuração como nula para forçar um erro
-                        catch
-                        {
-                            config = null;
-                        }
-                    }
                 }
-
-                _workerConfig = config;
-
-                //Se a configuração for nula, lança uma exceção para ser capturada no catch externo, onde será registrado um log de aviso
-                if (_workerConfig == null)
-                    throw new InvalidOperationException("Não foi possível carregar a configuração do worker.");
-
-                _logger.LogInformation("Config do worker atualizada. Intervalo={Intervalo}s", _workerConfig.MonitoringIntervalSeconds);
-                _logger.LogWarning("Config do worker atualizada por fallback, verificar o status do banco de dados para entender o motivo.");
-
-                return;
             }
 
-            _workerConfig = result.Success!;
-            _logger.LogInformation("Config do worker atualizada. Intervalo={Intervalo}s", _workerConfig.MonitoringIntervalSeconds);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Falha ao atualizar config do banco. Mantendo última config em memória.");
+            _workerConfig = config;
+
+            //Se a configuração for carregada com sucesso do arquivo de configuração, mesmo que tenha ocorrido um erro ao tentar carregar do serviço,
+            //registra um alerta para o administrador informando sobre a falha na atualização da configuração
+            if (_workerConfig != null)
+            {
+                _logger.LogInformation("Config do worker atualizada. Intervalo={Intervalo}s", _workerConfig.MonitoringIntervalSeconds);
+
+                _logger.LogWarning("Config do worker atualizada por fallback, verificar o status do banco de dados para entender o motivo.");
+                await _notificationService.NotifyAdminAlertAsync(
+                    alertKey: "config-fallback",
+                    title: "Worker em modo fallback de configuração",
+                    summary: "A configuração foi carregada via appsettings porque houve falha na leitura do banco de dados.",
+                    severity: LogLevel.Warning,
+                    exception: null,
+                    ct: ct);
+
+            }
+
         }
         finally
         {
             _nextConfigRefreshAt = DateTime.UtcNow.Add(_configRefreshInterval);
         }
     }
-
-    public async Task TestSendEmail()
-    {
-        try
-        {
-            using var scope = _scopeFactory.CreateScope();
-            var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
-
-            EmailBody emailBody = new()
-            {
-                To = "fernandesdanielvieira@gmail.com",
-                Name = string.Empty,
-                Subject = "Teste de envio de email - HealthCheck.Worker",
-                Body = "Este é um email de teste enviado pelo método TestSendEmail do Worker. Se você recebeu este email, significa que o serviço de envio de emails está funcionando corretamente.",
-                IsHtml = false
-            };
-
-            await emailService.SendSystemEmail(emailBody);
-        }
-        catch (Exception)
-        {
-
-        }
-    }
-
 
 }

@@ -14,6 +14,7 @@ public class MonitoringServices
     private readonly ILogger<Worker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly NotificationService _notificationService;
     private MonitoredSystemService? _monitoredSystemService = null;
     private SystemChecksService? _systemCheckService = null;
     private DateTime _cleaningDBAt = DateTime.Now;
@@ -22,11 +23,12 @@ public class MonitoringServices
     public MonitoringServices(ILogger<Worker> logger,
                               IServiceScopeFactory scopeFactory,
                               IHttpClientFactory httpClientFactory,
-                              IConfiguration configuration)
+                              NotificationService notificationService)
     {
         _logger = logger;
         _scopeFactory = scopeFactory;
         _httpClientFactory = httpClientFactory;
+        _notificationService = notificationService;
     }
 
     /// <summary>
@@ -100,7 +102,6 @@ public class MonitoringServices
                     {
                         currentStatus = HealthStatus.Unknown;
                         _logger.LogWarning("URL bloqueada para verificação. SistemaId: {SystemId}, Url: {Url}, Motivo: Não passou na validação de destinos seguros", monitoredSystem.Id, monitoredSystem.Url);
-
                         systemCheck.ErrorMessage = $"A URL: \"{monitoredSystem.Url}\" foi bloqueada para verificação. Não passou na validação de destinos seguros.";
                         return;
                     }
@@ -147,10 +148,11 @@ public class MonitoringServices
                 {
                     systemCheck.Status = currentStatus;
 
-                    //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-                    //TODO: Caso o status do sistema monitorado tenha mudado para Unhealthy ou Unknown, devo enviar um alerta (ex.: email, webhook, etc.)
-                    // para notificar os responsáveis sobre a indisponibilidade do sistema.
-                    //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+                    if (monitoredSystem.LastStatus != currentStatus &&
+                        (currentStatus == HealthStatus.Unhealthy || currentStatus == HealthStatus.Unknown))
+                    {
+                        await NotifySystemOwnerStatusAlertAsync(monitoredSystem, currentStatus, stoppingToken);
+                    }
 
                     //*************************************************************************************************************************************************************************
                     //Tenta atualizar as informações do sistema monitorado
@@ -171,10 +173,14 @@ public class MonitoringServices
         }
         catch (Exception ex)
         {
-            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-            //TODO: deve enviar uma notificação para os responsáveis informando sobre a falha no processamento das URLs pendentes
-            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             _logger.LogError(ex, "Falha ao processar URLs pendentes no worker.");
+            await _notificationService.NotifyAdminAlertAsync(
+                alertKey: "monitoring-execution-failed",
+                title: "Falha no processamento de URLs pendentes",
+                summary: "O Worker não conseguiu concluir o processamento do lote de URLs pendentes no ciclo atual.",
+                severity: LogLevel.Error,
+                exception: ex,
+                ct: stoppingToken);
         }
     }
 
@@ -205,8 +211,35 @@ public class MonitoringServices
                 //TODO: deve enviar uma notificação para os responsáveis informando sobre a falha na limpeza de dados antigos
                 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 _logger.LogError(ex, "Falha ao realizar a limpeza de dados antigos.");
+                await _notificationService.NotifyAdminAlertAsync(
+                    alertKey: "db-cleanup-failed",
+                    title: "Falha na limpeza de dados antigos",
+                    summary: "O Worker não conseguiu concluir a limpeza periódica dos registros antigos de monitoramento.",
+                    severity: LogLevel.Error,
+                    exception: ex,
+                    ct: stoppingToken);
             }
         }
+    }
+
+    private async Task NotifySystemOwnerStatusAlertAsync(
+        MonitoredSystem monitoredSystem,
+        HealthStatus currentStatus,
+        CancellationToken ct)
+    {
+        var summary =
+$"O sistema monitorado \"{monitoredSystem.Name}\" mudou para o status {currentStatus}.\n" +
+$"URL monitorada: {monitoredSystem.Url}\n" +
+$"Horário (UTC): {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}.";
+
+        await _notificationService.NotifyUserAlertAsync(
+            alertKey: $"status-change-{monitoredSystem.UserId}-{monitoredSystem.Id}-{currentStatus}",
+            userId: monitoredSystem.UserId,
+            userName: monitoredSystem.Name,
+            title: $"Alerta do sistema {monitoredSystem.Name}",
+            summary: summary,
+            severity: currentStatus == HealthStatus.Unhealthy ? LogLevel.Warning : LogLevel.Error,
+            ct: ct);
     }
 
     private async Task<bool> TryUpdateInformationCheck(MonitoredSystem monitoredSystem,
