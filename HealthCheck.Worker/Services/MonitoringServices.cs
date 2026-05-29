@@ -289,6 +289,7 @@ $"Horário (UTC): {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}.";
                     {
                         Id = monitoredSystem.Id,
                         LastCheckedAt = DateTime.Now,
+                        NextCheckAt = DateTime.Now.AddMinutes(1),
                         Status = currentStatus
                     };
 

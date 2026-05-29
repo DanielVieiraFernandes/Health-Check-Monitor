@@ -199,14 +199,15 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
     /// <exception cref="NotImplementedException"></exception>
     public async Task<List<MonitoredSystem>> GetPending(NpgsqlConnection? connectionAlreadyCreated = null)
     {
-        //********************************************************************************************
-        //SE O SISTEMA NUNCA FOI CHECADO, ENTÃO, A URL SERÁ RETORNADA PARA CHECAGEM. SE O SISTEMA FOI
-        //CHECADO, MAS O INTERVALO DESDE A ÚLTIMA CHECAGEM FOR MAIOR OU IGUAL A 15 MINUTOS, ENTÃO, O
-        //SISTEMA SERÁ RETORNADO PARA CHECAGEM.
-        //********************************************************************************************
+        //********************************************************************************************************************************
+        //BUSCO OS SISTEMAS QUE ESTÃO PENDENTES DE VERIFICAÇÃO DE ACORDO COM O CAMPO DA PRÓXIMA CHECAGEM.
+        //ORDENO EM ORDEM CRESCENTE PARA VERIFICAR OS SISTEMAS QUE FICAREM PENDENTES DE VERIFICAÇÃO POR MAIS TEMPO PRIMEIRO E
+        //LIMITO EM 500 SISTEMAS PARA EVITAR QUE O WORKER FIQUE SOBRECARREGADO CASO TENHA MUITOS SISTEMAS PENDENTES DE VERIFICAÇÃO
+        //********************************************************************************************************************************
         string sql = $@"SELECT * FROM {TABLE_NAME} 
-                    WHERE last_checked_at IS NULL 
-                       OR last_checked_at <= (NOW() - (INTERVAL '1 minute' * 1))";
+                    WHERE next_check_at <= NOW()
+                    ORDER BY next_check_at 
+                    LIMIT 500";
 
         NpgsqlConnection connection = connectionAlreadyCreated ?? await databaseService.CreateNewPgConnection();
 
@@ -249,7 +250,7 @@ public class MonitoredSystemRepository(DatabaseService databaseService) : IMonit
     /// <returns></returns>
     public async Task UpdateStatus(UpdateMonitoredSystemStatusDTO update, NpgsqlConnection? connectionAlreadyCreated = null)
     {
-        string sql = @"UPDATE monitored_systems SET last_checked_at = @LastCheckedAt, 
+        string sql = @"UPDATE monitored_systems SET last_checked_at = @LastCheckedAt, next_check_at = @NextCheckAt,
                        last_status = @Status, updated_at = NOW(), history = history || @History WHERE id = @Id";
 
         NpgsqlConnection connection = connectionAlreadyCreated ?? await databaseService.CreateNewPgConnection();

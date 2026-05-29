@@ -27,6 +27,7 @@ public class DatabaseService(NpgsqlConnection connection)
             sql.Append("url TEXT NOT NULL, ");
             sql.Append("last_status INT NOT NULL DEFAULT 1, ");
             sql.Append("last_checked_at TIMESTAMP WITHOUT TIME ZONE, ");
+            sql.Append("next_check_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(), ");
             sql.Append("history TEXT NOT NULL DEFAULT '', ");
             sql.Append("created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),");
             sql.Append("updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(), ");
@@ -36,6 +37,12 @@ public class DatabaseService(NpgsqlConnection connection)
             //*************************************************************************************************************************************
             sql.Append("UNIQUE(user_id, url)");
             sql.Append("); ");
+
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            //Cria um índice para acelerar a busca dos próximos sistemas a checar
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            sql.Append("CREATE INDEX IF NOT EXISTS idx_monitored_systems_next_check_at ");
+            sql.Append("ON monitored_systems (next_check_at);");
 
             await connection.ExecuteAsync(sql.ToString());
 

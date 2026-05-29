@@ -7,5 +7,6 @@ public class UpdateMonitoredSystemStatusDTO
     public Guid Id { get; set; }
     public HealthStatus Status { get; set; }
     public DateTime LastCheckedAt { get; set; }
+    public DateTime NextCheckAt { get; set; }
     public string History { get; set; } = string.Empty;
 }
