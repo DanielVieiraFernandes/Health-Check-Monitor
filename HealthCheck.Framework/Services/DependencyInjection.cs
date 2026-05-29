@@ -13,7 +13,7 @@ namespace HealthCheck.Framework.Services;
 
 public static class DependencyInjection
 {
-    public static void AddServices(this IServiceCollection services, IConfiguration configuration)
+    public static void AddFrameworkServices(this IServiceCollection services, IConfiguration configuration)
     {
         AddDatabaseServices(services, configuration);
         AddCryptographyServices(services);

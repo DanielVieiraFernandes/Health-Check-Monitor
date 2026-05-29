@@ -30,7 +30,7 @@ public class EmailService
         _password = _SMTPCredentialProvider.Decrypt(_credentials.Password);
     }
 
-    public async Task<Result<object>> SendSystemEmail(EmailBody emailBody, CancellationToken cancellationToken = default)
+    public virtual async Task<Result<object>> SendSystemEmail(EmailBody emailBody, CancellationToken cancellationToken = default)
     {
         if (emailBody is null)
             throw new ArgumentNullException(nameof(emailBody));

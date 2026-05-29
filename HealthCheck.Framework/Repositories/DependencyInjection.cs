@@ -9,7 +9,7 @@ namespace HealthCheck.Framework.Repositories;
 public static class DependencyInjection
 {
 
-    public static void AddRepositories(this IServiceCollection services)
+    public static void AddFrameworkRepositories(this IServiceCollection services)
     {
         // FAZ COM QUE O DAPPER CONSIGA MAPEAR AS COLUNAS COM UNDERLINE PARA PROPRIEDADES COM PASCAL/CAMEL CASE
         Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;

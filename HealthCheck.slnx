@@ -7,4 +7,7 @@
   <Folder Name="/src/DB_UP/">
     <Project Path="HealthCheck.DbUp/HealthCheck.DbUp.csproj" Id="e745c42f-e3e8-449f-ad0a-43122d5082f7" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="HealthCheck.Worker.Tests/HealthCheck.Worker.Tests.csproj" />
+  </Folder>
 </Solution>
