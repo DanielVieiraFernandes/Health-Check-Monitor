@@ -48,15 +48,6 @@ public class MonitoringServices
 
             var resultPending = await _monitoredSystemService.GetPendingMonitoredSystemsAsync();
 
-            //Caso haja falha ao obter os sistemas pendentes, registre o erro e retorne para agendar a próxima verificação.
-            if (resultPending.IsFailure)
-            {
-                var failure = resultPending.Failure;
-                var errors = string.Join("\n - ", failure?.Errors.Select(e => e.ErrorMessage) ?? ["!!!Motivo desconhecido!!!"]);
-                _logger.LogWarning("Falha ao obter os sistemas pendentes. Status: {StatusCode}. Motivo: {Reason}", failure?.StatusCode, errors);
-                return;
-            }
-
             var pendentes = resultPending.Success!;
 
             //Caso não haja sistemas monitorados pendentes para verificação, registra o aviso e retorna para a próxima execução agendada
@@ -70,7 +61,6 @@ public class MonitoringServices
             //processar cada sistema monitorado pendente.
             _systemCheckService = scope.ServiceProvider
                 .GetRequiredService<HealthCheck.Framework.Services.Database.SystemChecksService.SystemChecksService>();
-
 
             //Paralelismo controlado para evitar sobrecarga 
             var semaphore = new SemaphoreSlim(workerConfig.MaxConcurrentChecks);
@@ -150,9 +140,7 @@ public class MonitoringServices
 
                     if (monitoredSystem.LastStatus != currentStatus &&
                         (currentStatus == HealthStatus.Unhealthy || currentStatus == HealthStatus.Unknown))
-                    {
                         await NotifySystemOwnerStatusAlertAsync(monitoredSystem, currentStatus, stoppingToken);
-                    }
 
                     //*************************************************************************************************************************************************************************
                     //Tenta atualizar as informações do sistema monitorado
@@ -160,8 +148,21 @@ public class MonitoringServices
                     //*************************************************************************************************************************************************************************
                     var resultUpdate = await TryUpdateInformationCheck(monitoredSystem, systemCheck, currentStatus, workerConfig);
 
+                    //*************************************************************************************************************************************************************************
+                    //Caso não consiga atualizar o sistema completamente com as informações da checagem,
+                    //envia um alerta para o administrador
+                    //*************************************************************************************************************************************************************************
                     if (!resultUpdate)
+                    {
                         _logger.LogError("Falha ao atualizar as informações do sistema monitorado. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
+                        await _notificationService.NotifyAdminAlertAsync(
+                        alertKey: "monitoring-update-info-fail",
+                        title: $"Falha ao registrar checagem no sistema {systemCheck.SystemName} do usuário {systemCheck.UserId}",
+                        summary: $"O Worker não conseguiu registrar a checagem do sistema {monitoredSystem.Id} realizada nesse ciclo, o mesmo pode estar com o status desatualizado. Verifique os logs recentes para eventuais soluções.",
+                        severity: LogLevel.Error,
+                        exception: null,
+                        ct: stoppingToken);
+                    }
 
                     stopwatch.Reset();
                     semaphore.Release();
@@ -230,7 +231,7 @@ public class MonitoringServices
         var summary =
 $"O sistema monitorado \"{monitoredSystem.Name}\" mudou para o status {currentStatus}.\n" +
 $"URL monitorada: {monitoredSystem.Url}\n" +
-$"Horário (UTC): {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}.";
+$"Horário: {DateTime.Now:dd-MM-yy HH:mm:ss}.";
 
         await _notificationService.NotifyUserAlertAsync(
             alertKey: $"status-change-{monitoredSystem.UserId}-{monitoredSystem.Id}-{currentStatus}",
