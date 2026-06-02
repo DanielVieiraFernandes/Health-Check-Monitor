@@ -15,36 +15,11 @@
 <MudPopoverProvider />
 
 <div class="layout-root @(isDarkMode ? "theme-dark" : "theme-light")">
-    <MudLayout Class="hc-layout">
-        <MudDrawerContainer Class="hc-drawer-container">
-        <MudAppBar Elevation="0" Fixed="true" Class="hc-appbar">
-            <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="ml-2 hc-brand-title-wrapper">
-                <MudText Typo="Typo.h5" Class="font-weight-bold hc-brand-title">Monitoramento Web</MudText>
-            </MudStack>
-
-            <MudSpacer />
-
-            <AuthorizeView>
-                <MudTooltip Text="Sair">
-                    <MudIconButton Icon="@Icons.Material.Filled.Logout"
-                                   Color="Color.Inherit"
-                                   OnClick="HandleLogout" />
-                </MudTooltip>
-            </AuthorizeView>
-
-            <MudTooltip Text="Alternar Tema">
-                <MudIconButton Icon="@(isDarkMode? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
-                               Color="Color.Inherit"
-                               OnClick="@ToggleDarkMode" />
-            </MudTooltip>
-        </MudAppBar>
-
+    <MudDrawerContainer Class="hc-drawer-container">
         <AuthorizeView>
             <MudDrawer @bind-Open="drawerOpen"
                        Elevation="0"
-                       Variant="@drawerVariant"
+                       Variant="@DrawerVariant.Responsive"
                        OpenMiniOnHover="true"
                        ClipMode="DrawerClipMode.Always"
                        Breakpoint="Breakpoint.Sm"
@@ -59,36 +34,61 @@
             </MudDrawer>
         </AuthorizeView>
 
-        <MudMainContent Class="hc-main-content">
-            <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="hc-content-wrapper pt-6 pb-6">
-                <CascadingValue Name="IsDarkMode" Value="isDarkMode">
-                    <CascadingValue Name="UserSession" Value="sessionInfo">
-                        <CustomErrorBoundary @ref="meuBoundary">
-                            <ChildContent>
-                                @Body
-                            </ChildContent>
-                            <ErrorContent Context="excecao">
-                                <MudPaper Class="error-boundary-card pa-5" Elevation="0">
-                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
-                                        <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Error" Size="Size.Large" />
-                                        <MudText Typo="Typo.h6" Class="font-weight-bold">Algo inesperado aconteceu.</MudText>
-                                    </MudStack>
+        <MudLayout Class="hc-layout">
+            <MudAppBar Elevation="0" Fixed="true" Class="hc-appbar">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
 
-                                    <MudText Typo="Typo.body2" Class="mb-4">
-                                        Ocorreu uma exceção na aplicação, recarregue a página ou entre em contato com o suporte se o problema persistir.
-                                    </MudText>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="ml-2 hc-brand-title-wrapper">
+                    <MudText Typo="Typo.h5" Class="font-weight-bold hc-brand-title">Monitoramento Web</MudText>
+                </MudStack>
 
-                                    <MudButton Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Refresh" OnClick="TentarNovamente">
-                                        Tentar novamente
-                                    </MudButton>
-                                </MudPaper>
-                            </ErrorContent>
-                        </CustomErrorBoundary>
+                <MudSpacer />
+
+                <AuthorizeView>
+                    <MudTooltip Text="Sair">
+                        <MudIconButton Icon="@Icons.Material.Filled.Logout"
+                                       Color="Color.Inherit"
+                                       OnClick="HandleLogout" />
+                    </MudTooltip>
+                </AuthorizeView>
+
+                <MudTooltip Text="Alternar Tema">
+                    <MudIconButton Icon="@(isDarkMode? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                                   Color="Color.Inherit"
+                                   OnClick="@ToggleDarkMode" />
+                </MudTooltip>
+            </MudAppBar>
+
+            <MudMainContent Class="hc-main-content">
+                <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="hc-content-wrapper pt-6 pb-6">
+                    <CascadingValue Name="IsDarkMode" Value="isDarkMode">
+                        <CascadingValue Name="UserSession" Value="sessionInfo">
+                            <CustomErrorBoundary @ref="meuBoundary">
+                                <ChildContent>
+                                    @Body
+                                </ChildContent>
+                                <ErrorContent Context="excecao">
+                                    <MudPaper Class="error-boundary-card pa-5" Elevation="0">
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mb-2">
+                                            <MudIcon Icon="@Icons.Material.Filled.BugReport" Color="Color.Error" Size="Size.Large" />
+                                            <MudText Typo="Typo.h6" Class="font-weight-bold">Algo inesperado aconteceu.</MudText>
+                                        </MudStack>
+
+                                        <MudText Typo="Typo.body2" Class="mb-4">
+                                            Ocorreu uma exceção na aplicação, recarregue a página ou entre em contato com o suporte se o problema persistir.
+                                        </MudText>
+
+                                        <MudButton Variant="Variant.Filled" Color="Color.Warning" StartIcon="@Icons.Material.Filled.Refresh" OnClick="TentarNovamente">
+                                            Tentar novamente
+                                        </MudButton>
+                                    </MudPaper>
+                                </ErrorContent>
+                            </CustomErrorBoundary>
+                        </CascadingValue>
                     </CascadingValue>
-                </CascadingValue>
-            </MudContainer>
-        </MudMainContent>
-    </MudLayout>
+                </MudContainer>
+            </MudMainContent>
+        </MudLayout>
     </MudDrawerContainer>
 </div>
 
@@ -108,7 +108,6 @@
 @code {
     private bool drawerOpen = true;
     private bool isDarkMode = true;
-    private bool isMobile;
     private UserSessionInfo? sessionInfo = null;
     private bool wasAuthenticated;
     // Referência ao seu componente customizado
@@ -195,17 +194,7 @@
         if (firstRender)
         {
             await JS.InvokeVoidAsync("toggleTheme", isDarkMode ? "fluent2-dark" : "fluent2");
-            await CheckIsMobile();
-            await JS.InvokeVoidAsync("registerResizeHandler", DotNetObjectReference.Create(this));
-            StateHasChanged();
         }
-    }
-
-    [JSInvokable]
-    public async Task OnWindowResize()
-    {
-        await CheckIsMobile();
-        await InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
@@ -217,16 +206,6 @@
     private void HandleLoadingStateChanged()
     {
         InvokeAsync(StateHasChanged);
-    }
-
-    private DrawerVariant drawerVariant => isMobile
-        ? DrawerVariant.Temporary
-        : DrawerVariant.Mini;
-
-    private async Task CheckIsMobile()
-    {
-        var width = await JS.InvokeAsync<double>("getWindowWidth");
-        isMobile = width < 600;
     }
 
     private void DrawerToggle()

@@ -118,6 +118,10 @@ h1:focus {
     }
 }
 
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
     color: var(--bs-secondary-color);
     text-align: end;
