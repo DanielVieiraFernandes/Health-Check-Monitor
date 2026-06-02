@@ -2,6 +2,7 @@ using HealthCheck.Framework.Services.Database.UsersService;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
 using System.Security.Claims;
 
 namespace HealthCheck.Web.Services.Authentication;
@@ -11,6 +12,12 @@ public class AuthenticationService(
     IHttpContextAccessor httpContextAccessor,
     IOptions<UserSessionSettings> sessionSettings)
 {
+    //======================================================================================================
+    // ANTI BRUTE-FORCE: dicionário em memória para rastrear tentativas por IP
+    //======================================================================================================
+    private static readonly ConcurrentDictionary<string, (int attempts, DateTime lockedUntil)> _loginAttempts = new();
+    private const int MaxLoginAttempts = 5;
+    private const int LockoutMinutes = 15;
     //======================================================================================================
     // PONTO CENTRAL DA AUTENTICAÇÃO: valida usuário/senha no banco e prepara o cookie com as claims.
     //======================================================================================================
@@ -68,10 +75,42 @@ public class AuthenticationService(
     //------------------------------------------------------------------------------------------------------
     public async Task<IResult> SignInHttpAsync(LoginRequest request)
     {
+        //----------------------------------------------------------------------------------------------
+        // ANTI BRUTE-FORCE: verifica se o IP está bloqueado por excesso de tentativas
+        //----------------------------------------------------------------------------------------------
+        var remoteIp = httpContextAccessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
+
+        if (!string.IsNullOrEmpty(remoteIp))
+        {
+            if (_loginAttempts.TryGetValue(remoteIp, out var entry) && entry.lockedUntil > DateTime.UtcNow)
+            {
+                var remainingMinutes = (int)(entry.lockedUntil - DateTime.UtcNow).TotalMinutes + 1;
+                return Results.StatusCode(429);
+            }
+        }
+
         var authResult = await SignInAsync(request.Email, request.Password, request.PreferredTheme);
 
         if (!authResult.IsSuccess)
+        {
+            //------------------------------------------------------------------------------------------
+            // Incrementa contador de tentativas para o IP
+            //------------------------------------------------------------------------------------------
+            if (!string.IsNullOrEmpty(remoteIp))
+            {
+                _loginAttempts.AddOrUpdate(remoteIp,
+                    _ => (1, DateTime.MinValue),
+                    (_, existing) => existing.attempts + 1 >= MaxLoginAttempts
+                        ? (0, DateTime.UtcNow.AddMinutes(LockoutMinutes))
+                        : (existing.attempts + 1, DateTime.MinValue));
+            }
+
             return Results.BadRequest(authResult.ErrorMessage);
+        }
+
+        // Login bem-sucedido: remove o IP do cache de tentativas
+        if (!string.IsNullOrEmpty(remoteIp))
+            _loginAttempts.TryRemove(remoteIp, out _);
 
         return Results.Ok();
     }
