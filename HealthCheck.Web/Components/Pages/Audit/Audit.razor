@@ -125,7 +125,7 @@
                                 var item = (SystemCheck)context;
                             }
 
-                            <span>@item.Status.GetDescription().Split('-')[1]</span>
+                            <span>@item.Status.GetDescription()</span>
                         </Template>
                     </GridColumn>
                     <GridColumn Field="@nameof(SystemCheck.LatencyMs)" HeaderText="Latência (ms)" Width="140" TextAlign="TextAlign.Right" />
