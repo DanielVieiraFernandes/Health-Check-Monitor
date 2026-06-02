@@ -16,10 +16,11 @@
 
 <div class="layout-root @(isDarkMode ? "theme-dark" : "theme-light")">
     <MudLayout Class="hc-layout">
+        <MudDrawerContainer Class="hc-drawer-container">
         <MudAppBar Elevation="0" Fixed="true" Class="hc-appbar">
             <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
 
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="ml-2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="ml-2 hc-brand-title-wrapper">
                 <MudText Typo="Typo.h5" Class="font-weight-bold hc-brand-title">Monitoramento Web</MudText>
             </MudStack>
 
@@ -43,9 +44,10 @@
         <AuthorizeView>
             <MudDrawer @bind-Open="drawerOpen"
                        Elevation="0"
-                       Variant="@DrawerVariant.Mini"
+                       Variant="@drawerVariant"
                        OpenMiniOnHover="true"
                        ClipMode="DrawerClipMode.Always"
+                       Breakpoint="Breakpoint.Sm"
                        Class="hc-drawer">
 
                 <MudNavMenu Class="hc-nav-menu pt-4">
@@ -87,6 +89,7 @@
             </MudContainer>
         </MudMainContent>
     </MudLayout>
+    </MudDrawerContainer>
 </div>
 
 @if (loadingState.IsLoading)
@@ -105,6 +108,7 @@
 @code {
     private bool drawerOpen = true;
     private bool isDarkMode = true;
+    private bool isMobile;
     private UserSessionInfo? sessionInfo = null;
     private bool wasAuthenticated;
     // Referência ao seu componente customizado
@@ -191,7 +195,17 @@
         if (firstRender)
         {
             await JS.InvokeVoidAsync("toggleTheme", isDarkMode ? "fluent2-dark" : "fluent2");
+            await CheckIsMobile();
+            await JS.InvokeVoidAsync("registerResizeHandler", DotNetObjectReference.Create(this));
+            StateHasChanged();
         }
+    }
+
+    [JSInvokable]
+    public async Task OnWindowResize()
+    {
+        await CheckIsMobile();
+        await InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
@@ -203,6 +217,16 @@
     private void HandleLoadingStateChanged()
     {
         InvokeAsync(StateHasChanged);
+    }
+
+    private DrawerVariant drawerVariant => isMobile
+        ? DrawerVariant.Temporary
+        : DrawerVariant.Mini;
+
+    private async Task CheckIsMobile()
+    {
+        var width = await JS.InvokeAsync<double>("getWindowWidth");
+        isMobile = width < 600;
     }
 
     private void DrawerToggle()

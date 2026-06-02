@@ -26,7 +26,7 @@
 
     <MudPaper Class="search-panel pa-4 mb-4" Elevation="1">
         <MudStack Spacing="3">
-            <MudStack Row="true" Class="search-row" Spacing="2" AlignItems="AlignItems.Center">
+            <MudStack Row="true" Class="search-row" Spacing="2" AlignItems="AlignItems.Center" Wrap="Wrap">
                 <MudTextField @ref="textSearchRef"
                               T="string"
                               @oninput="OnInputSearch"
@@ -38,21 +38,23 @@
                               Class="search-input"
                               Disabled="loadingState.IsLoading" />
 
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Search"
-                           OnClick="LoadMonitoredSystemsData"
-                           Disabled="loadingState.IsLoading">
-                    Pesquisar
-                </MudButton>
+                <MudStack Row="true" Spacing="1" AlignItems="AlignItems.Center" Class="search-buttons" Wrap="Wrap">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Search"
+                               OnClick="LoadMonitoredSystemsData"
+                               Disabled="loadingState.IsLoading">
+                        Pesquisar
+                    </MudButton>
 
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Tune"
-                           OnClick="ToggleFilters"
-                           Disabled="loadingState.IsLoading">
-                    Filtros
-                </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Tune"
+                               OnClick="ToggleFilters"
+                               Disabled="loadingState.IsLoading">
+                        Filtros
+                    </MudButton>
+                </MudStack>
             </MudStack>
 
             <MudCollapse Expanded="showFilters">
