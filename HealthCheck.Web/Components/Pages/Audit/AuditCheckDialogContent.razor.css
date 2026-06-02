@@ -45,7 +45,7 @@
     max-width: 100%;
     white-space: pre-wrap;
     word-break: break-all;
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
     hyphens: auto;
     font-weight: 500;
     line-height: 1.6;
@@ -58,10 +58,9 @@
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
-    overflow-x: auto;
+    overflow-x: hidden;
     overflow-y: auto;
     max-height: 260px;
-    word-break: break-all;
 }
 
 .audit-message-card {
