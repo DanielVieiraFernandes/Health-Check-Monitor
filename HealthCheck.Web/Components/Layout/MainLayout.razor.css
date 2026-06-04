@@ -90,15 +90,17 @@
         padding: 0.75rem !important;
     }
 
-    .mud-drawer-responsive.mud-drawer-temporary {
+    .mud-drawer-responsive.mud-drawer--open {
         position: fixed !important;
         top: 0 !important;
+        left: 0 !important;
         height: 100vh !important;
         height: 100dvh !important;
     }
     .mud-drawer-overlay {
         position: fixed !important;
         top: 0 !important;
+        left: 0 !important;
     }
 }
 
