@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="HealthCheck.Worker.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="DTOS\**" />
     <EmbeddedResource Remove="DTOS\**" />
     <None Remove="DTOS\**" />
