@@ -33,9 +33,9 @@ args.forEach(arg => {
 });
 
 // Re-resolve after possible overrides
-const finalUrl = process.env.VERIFY_URL;
-const finalPages = process.env.VERIFY_PAGES.split(',').map(p => p.trim());
-const finalOutput = process.env.VERIFY_OUTPUT;
+const finalUrl = process.env.VERIFY_URL || BASE_URL;
+const finalPages = (process.env.VERIFY_PAGES || '/').split(',').map(p => p.trim());
+const finalOutput = process.env.VERIFY_OUTPUT || OUTPUT_DIR;
 
 async function main() {
   console.log(`\n🔍 Visual Verification — HealthCheck`);
