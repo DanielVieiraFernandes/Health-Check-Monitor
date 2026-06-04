@@ -362,4 +362,9 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-docs/implementacoes
+docs/implementacoes.visual-verify/
+node_modules/
+package-lock.json
+
+# Visual verification artifacts
+.visual-verify/

@@ -1,0 +1,27 @@
+{
+  "name": "healthcheck",
+  "version": "1.0.0",
+  "description": "<p align=\"center\">\r   <b>Monitoramento inteligente de serviços com foco em confiabilidade, clareza e evolução contínua.</b><br/>\r   <i>Aplicação web em Blazor Server, construída em .NET 10</i>\r </p>",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DanielVieiraFernandes/Health-Check-Monitor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/DanielVieiraFernandes/Health-Check-Monitor/issues"
+  },
+  "homepage": "https://github.com/DanielVieiraFernandes/Health-Check-Monitor#readme",
+  "dependencies": {
+    "puppeteer": "^25.1.0"
+  }
+}
