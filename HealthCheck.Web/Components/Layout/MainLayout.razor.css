@@ -47,6 +47,11 @@
     background: rgba(37, 99, 235, 0.12);
 }
 
+.layout-root ::deep .hc-nav-menu .mud-nav-link.active {
+    color: #93C5FD !important; /* brighter blue for visibility */
+    background: rgba(37, 99, 235, 0.2) !important; /* visible highlight */
+}
+
 .layout-root ::deep .hc-main-content {
     background: transparent;
 }
@@ -83,6 +88,17 @@
 
     .layout-root ::deep .page-hero {
         padding: 0.75rem !important;
+    }
+
+    .mud-drawer-responsive.mud-drawer-temporary {
+        position: fixed !important;
+        top: 0 !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+    }
+    .mud-drawer-overlay {
+        position: fixed !important;
+        top: 0 !important;
     }
 }
 
@@ -138,6 +154,11 @@
 
 .layout-root.theme-dark ::deep .hc-nav-menu .mud-nav-link:hover {
     background: rgba(37, 99, 235, 0.2);
+}
+
+.layout-root.theme-dark ::deep .hc-nav-menu .mud-nav-link.active {
+    color: #93C5FD !important;
+    background: rgba(37, 99, 235, 0.25) !important;
 }
 
 .layout-root.theme-dark .error-boundary-card {
