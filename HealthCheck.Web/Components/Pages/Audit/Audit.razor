@@ -8,7 +8,7 @@
 <div class="audit-page">
     <MudPaper Class="page-hero pa-5 mb-4" Elevation="0">
         <MudStack Spacing="3">
-            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
+            <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center" Class="responsive-row">
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.h4" Class="font-weight-bold">Auditoria de checagens</MudText>
                     <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Histórico completo das checagens registradas pelos workers.</MudText>
@@ -18,7 +18,7 @@
                     <MudText Typo="Typo.subtitle2" Class="font-weight-bold">@currentTime</MudText>
                 </MudStack>
             </MudStack>
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="audit-search-bar">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="audit-search-bar responsive-row">
                 <MudTextField T="string"
                               Placeholder="Pesquisar por sistema, retorno, exceção..."
                               Variant="Variant.Outlined"
@@ -43,16 +43,16 @@
 
     <MudPaper Class="surface-card pa-4" Elevation="1">
         <MudStack Spacing="2">
-            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="responsive-row">
                 <MudStack Spacing="0">
                     <MudText Typo="Typo.h6" Class="font-weight-bold">Registros de auditoria</MudText>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">Use os filtros para encontrar eventos específicos.</MudText>
                 </MudStack>
-                <MudStack Row="true" Spacing="3">
+                <MudStack Row="true" Spacing="3" Class="actions-mobile-stack">
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Tune" OnClick="ToggleFilters">
                         Filtros
                     </MudButton>
-                <MudStack Row="true" Spacing="2">
+                <MudStack Row="true" Spacing="2" Class="actions-mobile-stack">
                     <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Download" >
                         Exportar
                     </MudButton>
