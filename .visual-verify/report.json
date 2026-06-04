@@ -1,0 +1,271 @@
+{
+  "timestamp": "2026-06-04T20:21:31.325Z",
+  "baseUrl": "http://2.24.105.55:5000",
+  "pages": [
+    "C:/Program Files/Git/",
+    "/home",
+    "/auditoria",
+    "/sistemas",
+    "/configuracoes"
+  ],
+  "total": 25,
+  "ok": 20,
+  "failures": 5,
+  "results": [
+    {
+      "page": "C:/Program Files/Git/",
+      "viewport": "mobile-sm",
+      "label": "Mobile Pequeno (375×812)",
+      "width": 375,
+      "height": 812,
+      "file": null,
+      "title": null,
+      "status": "error",
+      "error": "Protocol error (Page.navigate): Cannot navigate to invalid URL"
+    },
+    {
+      "page": "C:/Program Files/Git/",
+      "viewport": "mobile-lg",
+      "label": "Mobile Grande (430×932)",
+      "width": 430,
+      "height": 932,
+      "file": null,
+      "title": null,
+      "status": "error",
+      "error": "Protocol error (Page.navigate): Cannot navigate to invalid URL"
+    },
+    {
+      "page": "C:/Program Files/Git/",
+      "viewport": "tablet",
+      "label": "Tablet (768×1024)",
+      "width": 768,
+      "height": 1024,
+      "file": null,
+      "title": null,
+      "status": "error",
+      "error": "Protocol error (Page.navigate): Cannot navigate to invalid URL"
+    },
+    {
+      "page": "C:/Program Files/Git/",
+      "viewport": "laptop",
+      "label": "Laptop (1366×768)",
+      "width": 1366,
+      "height": 768,
+      "file": null,
+      "title": null,
+      "status": "error",
+      "error": "Protocol error (Page.navigate): Cannot navigate to invalid URL"
+    },
+    {
+      "page": "C:/Program Files/Git/",
+      "viewport": "desktop",
+      "label": "Desktop (1920×1080)",
+      "width": 1920,
+      "height": 1080,
+      "file": null,
+      "title": null,
+      "status": "error",
+      "error": "Protocol error (Page.navigate): Cannot navigate to invalid URL"
+    },
+    {
+      "page": "/home",
+      "viewport": "mobile-sm",
+      "label": "Mobile Pequeno (375×812)",
+      "width": 375,
+      "height": 812,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\home_mobile-sm.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/home",
+      "viewport": "mobile-lg",
+      "label": "Mobile Grande (430×932)",
+      "width": 430,
+      "height": 932,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\home_mobile-lg.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/home",
+      "viewport": "tablet",
+      "label": "Tablet (768×1024)",
+      "width": 768,
+      "height": 1024,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\home_tablet.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/home",
+      "viewport": "laptop",
+      "label": "Laptop (1366×768)",
+      "width": 1366,
+      "height": 768,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\home_laptop.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/home",
+      "viewport": "desktop",
+      "label": "Desktop (1920×1080)",
+      "width": 1920,
+      "height": 1080,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\home_desktop.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/auditoria",
+      "viewport": "mobile-sm",
+      "label": "Mobile Pequeno (375×812)",
+      "width": 375,
+      "height": 812,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\auditoria_mobile-sm.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/auditoria",
+      "viewport": "mobile-lg",
+      "label": "Mobile Grande (430×932)",
+      "width": 430,
+      "height": 932,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\auditoria_mobile-lg.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/auditoria",
+      "viewport": "tablet",
+      "label": "Tablet (768×1024)",
+      "width": 768,
+      "height": 1024,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\auditoria_tablet.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/auditoria",
+      "viewport": "laptop",
+      "label": "Laptop (1366×768)",
+      "width": 1366,
+      "height": 768,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\auditoria_laptop.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/auditoria",
+      "viewport": "desktop",
+      "label": "Desktop (1920×1080)",
+      "width": 1920,
+      "height": 1080,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\auditoria_desktop.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/sistemas",
+      "viewport": "mobile-sm",
+      "label": "Mobile Pequeno (375×812)",
+      "width": 375,
+      "height": 812,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\sistemas_mobile-sm.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/sistemas",
+      "viewport": "mobile-lg",
+      "label": "Mobile Grande (430×932)",
+      "width": 430,
+      "height": 932,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\sistemas_mobile-lg.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/sistemas",
+      "viewport": "tablet",
+      "label": "Tablet (768×1024)",
+      "width": 768,
+      "height": 1024,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\sistemas_tablet.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/sistemas",
+      "viewport": "laptop",
+      "label": "Laptop (1366×768)",
+      "width": 1366,
+      "height": 768,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\sistemas_laptop.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/sistemas",
+      "viewport": "desktop",
+      "label": "Desktop (1920×1080)",
+      "width": 1920,
+      "height": 1080,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\sistemas_desktop.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/configuracoes",
+      "viewport": "mobile-sm",
+      "label": "Mobile Pequeno (375×812)",
+      "width": 375,
+      "height": 812,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\configuracoes_mobile-sm.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/configuracoes",
+      "viewport": "mobile-lg",
+      "label": "Mobile Grande (430×932)",
+      "width": 430,
+      "height": 932,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\configuracoes_mobile-lg.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/configuracoes",
+      "viewport": "tablet",
+      "label": "Tablet (768×1024)",
+      "width": 768,
+      "height": 1024,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\configuracoes_tablet.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/configuracoes",
+      "viewport": "laptop",
+      "label": "Laptop (1366×768)",
+      "width": 1366,
+      "height": 768,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\configuracoes_laptop.png",
+      "title": "Login",
+      "status": "ok"
+    },
+    {
+      "page": "/configuracoes",
+      "viewport": "desktop",
+      "label": "Desktop (1920×1080)",
+      "width": 1920,
+      "height": 1080,
+      "file": "C:\\Desenvolvimento\\Aplicacoes\\HealthCheck\\.visual-verify\\configuracoes_desktop.png",
+      "title": "Login",
+      "status": "ok"
+    }
+  ]
+}

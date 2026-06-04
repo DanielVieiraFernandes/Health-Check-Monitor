@@ -179,6 +179,19 @@ h1:focus {
         flex-wrap: wrap !important;
         gap: 0.5rem;
     }
+
+    /* ----- Mobile drawer positioning fix ----- */
+    .mud-drawer-responsive.mud-drawer--open {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+    }
+
+    .mud-drawer-overlay {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+    }
 }
 
 .flex-wrap {
