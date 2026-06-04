@@ -222,12 +222,17 @@
                 await InvokeAsync(StateHasChanged);
             }
         }
-        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         //Caso o componente seja descartado, cancelo o timer para evitar que ele continue tentando atualizar o dashboard.
-        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         catch (OperationCanceledException)
         {
             snackbar.Add("Atualização do dashboard interrompida.", Severity.Info);
+        }
+        //Caso o circuito Blazor seja descartado (ex: Syncfusion SfTooltip tenta renderizar após dispose)
+        catch (ObjectDisposedException)
+        {
+            // Circuito descartado — ignorar silenciosamente
         }
         //Caso ocorra qualquer outro erro durante a atualização do dashboard, exibo uma mensagem de erro para o usuário.
         catch (Exception ex)
@@ -236,7 +241,19 @@
             throw;
         }
     }
-    
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            await base.OnAfterRenderAsync(firstRender);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Ignora erros de dispose tardio de componentes JS (ex: Syncfusion SfTooltip)
+        }
+    }
+
     public void Dispose()
     {
         cts.Cancel();
