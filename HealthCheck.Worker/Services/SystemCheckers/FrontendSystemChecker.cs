@@ -20,8 +20,8 @@ public class FrontendSystemChecker(IHttpClientFactory httpClientFactory, int tim
             sw.Stop();
 
             var body = await response.Content.ReadAsStringAsync(ct);
-            var expectedCode = system.ExpectedHttpStatus ?? 200;
-            var codeOk = (int)response.StatusCode == expectedCode;
+            var expectedCode = system.ExpectedHttpStatus ?? HttpStatusCode.OK;
+            var codeOk = response.StatusCode == expectedCode;
 
             var expectedText = system.ExpectedBodyText;
             var textOk = string.IsNullOrWhiteSpace(expectedText)
@@ -30,9 +30,9 @@ public class FrontendSystemChecker(IHttpClientFactory httpClientFactory, int tim
             var isHealthy = codeOk && textOk;
             string? errorMessage = null;
             if (!codeOk)
-                errorMessage = $"HTTP {(int)response.StatusCode} — esperado: {expectedCode}";
+                errorMessage = $"HTTP {(int)response.StatusCode} — esperado: {(int)expectedCode}";
             else if (!textOk)
-                errorMessage = $"HTTP {expectedCode} OK — texto \"{expectedText}\" não encontrado ({body.Length} bytes)";
+                errorMessage = $"HTTP {(int)expectedCode} OK — texto \"{expectedText}\" não encontrado ({body.Length} bytes)";
 
             return new CheckResult
             {

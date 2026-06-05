@@ -19,9 +19,9 @@ public class WebApiSystemChecker(IHttpClientFactory httpClientFactory, int timeo
             using var response = await client.GetAsync(system.Url, ct);
             sw.Stop();
 
-            var expectedCode = system.ExpectedHttpStatus ?? 200;
+            var expectedCode = system.ExpectedHttpStatus ?? HttpStatusCode.OK;
             var body = await response.Content.ReadAsStringAsync(ct);
-            var isHealthy = (int)response.StatusCode == expectedCode;
+            var isHealthy = response.StatusCode == expectedCode;
 
             return new CheckResult
             {
@@ -29,7 +29,7 @@ public class WebApiSystemChecker(IHttpClientFactory httpClientFactory, int timeo
                 LatencyMs = sw.ElapsedMilliseconds,
                 Response = Truncate(body, 500),
                 ErrorMessage = isHealthy ? null
-                    : $"HTTP {(int)response.StatusCode} — esperado: {expectedCode}"
+                    : $"HTTP {(int)response.StatusCode} — esperado: {(int)expectedCode}"
             };
         }
         catch (Exception ex)
