@@ -16,4 +16,8 @@
     <ProjectReference Include="..\HealthCheck.Framework\HealthCheck.Framework.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Scripts\*.sql" />
+  </ItemGroup>
+
 </Project>
