@@ -1,6 +1,7 @@
 @inject LoadingState loadingState
 @inject IDialogService DialogService
 @using HealthCheck.Framework.Enums
+@using System.Net
 
 <MudGrid Class="edit-monitored-system-grid" Spacing="3">
     <MudItem xs="12" lg="12" Class="dialog-column top-row-column">
@@ -49,25 +50,26 @@
                     <MudSelect @bind-Value="monitoredSystem.ExpectedHttpStatus"
                                Label="Status HTTP esperado"
                                Variant="Variant.Outlined"
-                               T="int?"
-                               ToStringFunc="@(c => c is null ? "200 (padrão)" : c.ToString())"
+                               T="HttpStatusCode?"
+                               ToStringFunc="@(c => c is null ? "200 (padrão)" : $"{(int)c} {c}")"
                                Immediate="true">
-                        <MudSelectItem Value="(int?)null">200 (padrão)</MudSelectItem>
-                        <MudSelectItem Value="200">200 OK</MudSelectItem>
-                        <MudSelectItem Value="201">201 Created</MudSelectItem>
-                        <MudSelectItem Value="204">204 No Content</MudSelectItem>
-                        <MudSelectItem Value="301">301 Moved Permanently</MudSelectItem>
-                        <MudSelectItem Value="302">302 Found</MudSelectItem>
-                        <MudSelectItem Value="400">400 Bad Request</MudSelectItem>
-                        <MudSelectItem Value="401">401 Unauthorized</MudSelectItem>
-                        <MudSelectItem Value="403">403 Forbidden</MudSelectItem>
-                        <MudSelectItem Value="404">404 Not Found</MudSelectItem>
-                        <MudSelectItem Value="500">500 Internal Server Error</MudSelectItem>
-                        <MudSelectItem Value="503">503 Service Unavailable</MudSelectItem>
-                        <MudSelectItem Value="-1">Outro (digitar)</MudSelectItem>
+                        <MudSelectItem Value="(HttpStatusCode?)null">200 OK (padrão)</MudSelectItem>
+                        <MudSelectItem Value="HttpStatusCode.OK">200 OK</MudSelectItem>
+                        <MudSelectItem Value="HttpStatusCode.Created">201 Created</MudSelectItem>
+                        <MudSelectItem Value="HttpStatusCode.NoContent">204 No Content</MudSelectItem>
+                        <MudSelectItem Value="HttpStatusCode.MovedPermanently">301 Moved Permanently</MudSelectItem>
+                        <MudSelectItem Value="HttpStatusCode.Found">302 Found</MudSelectItem>
+                        <MudSelectItem Value="HttpStatusCode.BadRequest">400 Bad Request</MudSelectItem>
+                        <MudSelectItem Value="HttpStatusCode.Unauthorized">401 Unauthorized</MudSelectItem>
+                        <MudSelectItem Value="HttpStatusCode.Forbidden">403 Forbidden</MudSelectItem>
+                        <MudSelectItem Value="HttpStatusCode.NotFound">404 Not Found</MudSelectItem>
+                        <MudSelectItem Value="HttpStatusCode.InternalServerError">500 Internal Server Error</MudSelectItem>
+                        <MudSelectItem Value="HttpStatusCode.ServiceUnavailable">503 Service Unavailable</MudSelectItem>
                     </MudSelect>
 
-                    @if (monitoredSystem.ExpectedHttpStatus == -1)
+                    <MudSwitch @bind-Checked="useCustomHttpStatus" Label="Status code customizado" Color="Color.Info" T="bool" />
+
+                    @if (useCustomHttpStatus)
                     {
                         <MudTextField @bind-Value="customHttpStatusText"
                                       Label="Digite o status code"
@@ -179,12 +181,13 @@
     private MonitoredSystem originalMonitoredSystem { get; set; } = new();
     private string? lastSystemCheckResponse;
     private int validationVersion;
+    private bool useCustomHttpStatus;
     private string customHttpStatusText = "";
 
-    public int? GetEffectiveHttpStatus()
+    public HttpStatusCode? GetEffectiveHttpStatus()
     {
-        if (monitoredSystem.ExpectedHttpStatus == -1 && int.TryParse(customHttpStatusText, out var c))
-            return c;
+        if (useCustomHttpStatus && int.TryParse(customHttpStatusText, out var code) && Enum.IsDefined(typeof(HttpStatusCode), code))
+            return (HttpStatusCode)code;
         return monitoredSystem.ExpectedHttpStatus;
     }
 
