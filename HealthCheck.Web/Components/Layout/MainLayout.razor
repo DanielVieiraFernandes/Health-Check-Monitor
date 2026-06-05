@@ -16,23 +16,21 @@
 
 <div class="layout-root @(isDarkMode ? "theme-dark" : "theme-light")">
     <MudDrawerContainer Class="hc-drawer-container">
-        <AuthorizeView>
-            <MudDrawer @bind-Open="drawerOpen"
-                       Elevation="0"
-                       Variant="@DrawerVariant.Responsive"
-                       OpenMiniOnHover="true"
-                       ClipMode="DrawerClipMode.Always"
-                       Breakpoint="Breakpoint.Sm"
-                       Class="hc-drawer">
+        <MudDrawer @bind-Open="drawerOpen"
+                   Elevation="0"
+                   Variant="@DrawerVariant.Responsive"
+                   OpenMiniOnHover="true"
+                   ClipMode="DrawerClipMode.Always"
+                   Breakpoint="Breakpoint.Sm"
+                   Class="hc-drawer">
 
-                <MudNavMenu Class="hc-nav-menu pt-4">
-                    <MudNavLink Href="/home" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard" IconColor="Color.Info">Dashboard</MudNavLink>
-                    <MudNavLink Href="/sistemas" Icon="@Icons.Material.Filled.Dns" IconColor="Color.Success">Sistemas</MudNavLink>
-                    <MudNavLink Href="/auditoria" Icon="@Icons.Material.Filled.FactCheck" IconColor="Color.Warning">Auditoria</MudNavLink>
-                    <MudNavLink Href="/configuracoes" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Secondary">Configurações</MudNavLink>
-                </MudNavMenu>
-            </MudDrawer>
-        </AuthorizeView>
+            <MudNavMenu Class="hc-nav-menu pt-4">
+                <MudNavLink Href="/home" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard" IconColor="Color.Info">Dashboard</MudNavLink>
+                <MudNavLink Href="/sistemas" Icon="@Icons.Material.Filled.Dns" IconColor="Color.Success">Sistemas</MudNavLink>
+                <MudNavLink Href="/auditoria" Icon="@Icons.Material.Filled.FactCheck" IconColor="Color.Warning">Auditoria</MudNavLink>
+                <MudNavLink Href="/configuracoes" Icon="@Icons.Material.Filled.Settings" IconColor="Color.Secondary">Configurações</MudNavLink>
+            </MudNavMenu>
+        </MudDrawer>
 
         <MudLayout Class="hc-layout">
             <MudAppBar Elevation="0" Fixed="true" Class="hc-appbar">
@@ -44,13 +42,11 @@
 
                 <MudSpacer />
 
-                <AuthorizeView>
-                    <MudTooltip Text="Sair">
-                        <MudIconButton Icon="@Icons.Material.Filled.Logout"
-                                       Color="Color.Inherit"
-                                       OnClick="HandleLogout" />
-                    </MudTooltip>
-                </AuthorizeView>
+                <MudTooltip Text="Sair">
+                    <MudIconButton Icon="@Icons.Material.Filled.Logout"
+                                   Color="Color.Inherit"
+                                   OnClick="HandleLogout" />
+                </MudTooltip>
 
                 <MudTooltip Text="Alternar Tema">
                     <MudIconButton Icon="@(isDarkMode? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
