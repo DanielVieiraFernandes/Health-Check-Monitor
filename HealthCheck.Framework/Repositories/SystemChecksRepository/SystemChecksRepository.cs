@@ -77,7 +77,7 @@ public class SystemChecksRepository(DatabaseService databaseService) : ISystemCh
         DynamicParameters searchParameters = new();
 
         string sqlSelect = $@"SELECT checks.id, checks.user_id, checks.system_id, checks.status, 
-        checks.latency_ms, checks.checked_at, checks.system_response, checks.error_message, 
+        checks.latency_ms, checks.checked_at, LEFT(checks.system_response, 500) AS system_response, checks.error_message, 
         checks.exception_type, checks.stack_trace, ms.name AS system_name 
         FROM {TABLE_NAME} checks 
         INNER JOIN monitored_systems ms ON ms.id = checks.system_id WHERE checks.user_id = @UserId";
