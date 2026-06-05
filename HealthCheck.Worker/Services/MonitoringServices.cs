@@ -5,7 +5,7 @@ using HealthCheck.Framework.Services.Database.MonitoredSystemService.DTOS;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService.Validators;
 using HealthCheck.Framework.Services.Database.SystemChecksService;
 using System.Diagnostics;
-using System.Net;
+using HealthCheck.Worker.Services.SystemCheckers;
 
 namespace HealthCheck.Worker.Services;
 
@@ -14,6 +14,7 @@ public class MonitoringServices
     private readonly ILogger<Worker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IEnumerable<ISystemChecker> _checkers;
     private MonitoredSystemService? _monitoredSystemService = null;
     private SystemChecksService? _systemCheckService = null;
     private DateTime _cleaningDBAt = DateTime.Now;
@@ -22,11 +23,12 @@ public class MonitoringServices
     public MonitoringServices(ILogger<Worker> logger,
                               IServiceScopeFactory scopeFactory,
                               IHttpClientFactory httpClientFactory,
-                              IConfiguration configuration)
+                              IEnumerable<ISystemChecker> checkers)
     {
         _logger = logger;
         _scopeFactory = scopeFactory;
         _httpClientFactory = httpClientFactory;
+        _checkers = checkers;
     }
 
     /// <summary>
@@ -73,8 +75,6 @@ public class MonitoringServices
             //Paralelismo controlado para evitar sobrecarga 
             var semaphore = new SemaphoreSlim(workerConfig.MaxConcurrentChecks);
 
-            Stopwatch stopwatch = new();
-
             //Processa cada sistema monitorado pendente em paralelo, respeitando o limite de concorrência.
             var tasks = pendentes.Select(async monitoredSystem =>
             {
@@ -105,29 +105,18 @@ public class MonitoringServices
                         return;
                     }
 
-                    //Crio um client para cada requisição para evitar problemas de concorrência
-                    //e garantir que cada verificação seja independente.
-                    var client = _httpClientFactory.CreateClient();
+                    //Usa o dispatcher de ISystemChecker para delegar a verificação ao checker apropriado
+                    var checker = _checkers.FirstOrDefault(c => c.SupportedType == monitoredSystem.SystemType)
+                        ?? _checkers.First();
 
-                    //Configuro um timeout de segundos para não esperar por
-                    //muito tempo uma resposta do sistema
-                    client.Timeout = TimeSpan.FromSeconds(workerConfig.TimeoutSeconds);
+                    var result = await checker.CheckAsync(monitoredSystem, stoppingToken);
 
-                    stopwatch.Start();
-                    //Realizo a requisição HTTP para a URL do sistema monitorado.
-                    using var response = await client.GetAsync(monitoredSystem.Url, stoppingToken);
-                    stopwatch.Stop();
-
-                    //Atualizo o status do sistema monitorado com base no código de resposta.
-                    currentStatus = response.StatusCode == HttpStatusCode.OK ? HealthStatus.Healthy : HealthStatus.Unhealthy;
-
-                    //Caso tenha uma resposta no body da requisição, registro ela no campo response para a auditoria
-                    var responseBody = await response.Content.ReadAsStringAsync();
-                    if (!string.IsNullOrEmpty(responseBody))
-                        systemCheck.SystemResponse = responseBody;
-
-                    //Registro a latência da resposta
-                    systemCheck.LatencyMs = stopwatch.ElapsedMilliseconds;
+                    currentStatus = result.Status;
+                    systemCheck.LatencyMs = result.LatencyMs;
+                    systemCheck.SystemResponse = result.Response;
+                    systemCheck.ErrorMessage = result.ErrorMessage;
+                    systemCheck.ExceptionType = result.ExceptionType;
+                    systemCheck.StackTrace = result.StackTrace;
                 }
                 catch (Exception ex)
                 {
@@ -161,7 +150,6 @@ public class MonitoringServices
                     if (!resultUpdate)
                         _logger.LogError("Falha ao atualizar as informações do sistema monitorado. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
 
-                    stopwatch.Reset();
                     semaphore.Release();
                 }
             });

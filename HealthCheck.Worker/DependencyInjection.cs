@@ -6,6 +6,7 @@ using HealthCheck.Framework.Services.Database.MonitoredSystemService;
 using HealthCheck.Framework.Services.Database.SystemChecksService;
 using HealthCheck.Framework.Services.Database.WorkerConfigService;
 using HealthCheck.Worker.Services;
+using HealthCheck.Worker.Services.SystemCheckers;
 using Serilog;
 
 namespace HealthCheck.Worker;
@@ -22,6 +23,13 @@ public static class DependencyInjection
     private static void AddWorkerServices(IServiceCollection services)
     {
         services.AddSingleton<MonitoringServices>();
+
+        services.AddSingleton<ISystemChecker>(sp =>
+            new WebApiSystemChecker(sp.GetRequiredService<IHttpClientFactory>(), 10));
+        services.AddSingleton<ISystemChecker>(sp =>
+            new FrontendSystemChecker(sp.GetRequiredService<IHttpClientFactory>(), 10));
+        services.AddSingleton<ISystemChecker, SqlDatabaseSystemChecker>();
+        services.AddSingleton<ISystemChecker, NoSqlDatabaseSystemChecker>();
     }
 
     private static void AddFrameworkServices(IServiceCollection services, IConfiguration configuration)
