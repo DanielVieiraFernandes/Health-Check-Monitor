@@ -2,6 +2,8 @@ const puppeteer = require('puppeteer');
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'] });
   const page = await browser.newPage();
+  page.on('pageerror', err => console.log('PAGE_ERROR:', err.message));
+  
   await page.setViewport({ width: 1366, height: 768 });
   await page.goto('http://2.24.105.55:5000/', { waitUntil: 'networkidle2', timeout: 60000 });
   await new Promise(r => setTimeout(r, 4000));
@@ -14,39 +16,27 @@ const puppeteer = require('puppeteer');
         ['mousedown','mouseup','click'].forEach(e => b.dispatchEvent(new MouseEvent(e, {bubbles:true})));
     });
   });
-  await new Promise(r => setTimeout(r, 8000));
-  await page.setViewport({ width: 375, height: 812 });
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise(r => setTimeout(r, 10000));
   
-  // Open drawer by clicking hamburger
-  await page.evaluate(() => {
-    const btn = document.querySelector('.mud-appbar .mud-icon-button');
-    if (btn) btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-  });
-  await new Promise(r => setTimeout(r, 1500));
+  const title = await page.title();
+  console.log('Title:', title);
   
-  const info = await page.evaluate(() => {
-    const drawer = document.querySelector('.mud-drawer');
-    if (!drawer) return {error:'no-drawer'};
-    const sheets = Array.from(document.styleSheets);
-    let matchingRule = null;
-    for (const sheet of sheets) {
-      try {
-        for (const rule of sheet.cssRules || []) {
-          if (rule.selectorText && rule.selectorText.includes('mud-drawer-responsive') && rule.selectorText.includes('open')) {
-            matchingRule = rule.cssText;
-          }
-        }
-      } catch(e) {}
-    }
+  // Check what page we're on and for errors
+  const state = await page.evaluate(() => {
+    const boundary = document.querySelector('.error-boundary-card');
+    const snackbars = document.querySelectorAll('.mud-snackbar-content');
+    const alerts = document.querySelectorAll('.mud-alert-message');
+    const spinner = document.querySelector('.global-loading-overlay, .loading-spinner');
     return {
-      inlineStyle: drawer.getAttribute('style') || '(none)',
-      computedPosition: window.getComputedStyle(drawer).position,
-      computedTop: window.getComputedStyle(drawer).top,
-      classes: drawer.className,
-      matchingRule: matchingRule || 'NOT FOUND IN STYLESHEETS'
+      onErrorBoundary: !!boundary,
+      boundaryText: boundary ? boundary.innerText.substring(0, 300) : null,
+      snackbars: Array.from(snackbars).map(s => s.innerText.substring(0, 200)),
+      alerts: Array.from(alerts).map(a => a.innerText.substring(0, 200)),
+      isLoading: !!spinner,
+      url: window.location.href
     };
   });
-  console.log(JSON.stringify(info, null, 2));
+  console.log(JSON.stringify(state, null, 2));
+  
   await browser.close();
-})().catch(e => console.log('ERR:' + e.message));
+})().catch(e => console.log('FATAL:', e.message));

@@ -363,3 +363,8 @@ MigrationBackup/
 FodyWeavers.xsd
 
 docs/implementacoes
+
+# Visual verification screenshots (not for git)
+.visual-verify/
+scripts/check-menu.js
+scripts/deep-check.js
