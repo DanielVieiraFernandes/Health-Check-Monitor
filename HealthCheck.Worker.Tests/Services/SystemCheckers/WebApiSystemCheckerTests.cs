@@ -26,7 +26,7 @@ public class WebApiSystemCheckerTests
     public async Task CheckAsync_200_Expected201_Unhealthy()
     {
         var checker = new WebApiSystemChecker(CreateFactory(HttpStatusCode.OK, "ok"), 10);
-        var system = new MonitoredSystem { Url = "http://test.com", ExpectedHttpStatus = 201 };
+        var system = new MonitoredSystem { Url = "http://test.com", ExpectedHttpStatus = HttpStatusCode.Created };
 
         var result = await checker.CheckAsync(system, CancellationToken.None);
 

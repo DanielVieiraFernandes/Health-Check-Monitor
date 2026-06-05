@@ -1,6 +1,7 @@
 ﻿using FluentValidation;
 using HealthCheck.Framework.Enums;
 using HealthCheck.Framework.Models;
+using System.Net;
 
 namespace HealthCheck.Framework.Services.Database.MonitoredSystemService.Validators;
 
@@ -25,7 +26,7 @@ public class CreateMonitoredSystemValidator : AbstractValidator<MonitoredSystem>
             .WithMessage("Tipo de sistema inválido.");
 
         RuleFor(x => x.ExpectedHttpStatus)
-            .Must(code => code is null || code == -1 || (code >= 100 && code <= 599))
+            .Must(code => code is null || Enum.IsDefined(typeof(HttpStatusCode), (int)code!))
             .WithMessage("Status HTTP deve estar entre 100 e 599.");
 
         RuleFor(x => x.ExpectedBodyText)
