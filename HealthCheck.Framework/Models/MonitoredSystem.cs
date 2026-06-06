@@ -1,4 +1,5 @@
 ﻿using HealthCheck.Framework.Enums;
+using System.Net;
 
 namespace HealthCheck.Framework.Models;
 
@@ -18,7 +19,7 @@ public sealed class MonitoredSystem : UtilsForModels
     public SystemType SystemType { get; set; } = SystemType.WebApi;
 
     /// <summary>Código HTTP esperado. Null = usa default do tipo.</summary>
-    public int? ExpectedHttpStatus { get; set; }
+    public HttpStatusCode? ExpectedHttpStatus { get; set; }
 
     /// <summary>Texto esperado no body (Front-end). Null = não verifica.</summary>
     public string? ExpectedBodyText { get; set; }
