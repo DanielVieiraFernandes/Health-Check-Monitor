@@ -363,3 +363,7 @@ MigrationBackup/
 FodyWeavers.xsd
 
 docs/implementacoes
+
+# Hermes Agent local artifacts
+.hermes/
+.visual-verify/

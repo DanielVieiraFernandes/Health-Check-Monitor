@@ -25,6 +25,9 @@ public class DatabaseService(NpgsqlConnection connection)
             sql.Append("name VARCHAR(255) NOT NULL, ");
             sql.Append("description TEXT NOT NULL DEFAULT '', ");
             sql.Append("url TEXT NOT NULL, ");
+            sql.Append("system_type INT NOT NULL DEFAULT 1, ");
+            sql.Append("expected_http_status INT DEFAULT NULL, ");
+            sql.Append("expected_body_text TEXT DEFAULT NULL, ");
             sql.Append("last_status INT NOT NULL DEFAULT 1, ");
             sql.Append("last_checked_at TIMESTAMP WITHOUT TIME ZONE, ");
             sql.Append("history TEXT NOT NULL DEFAULT '', ");
