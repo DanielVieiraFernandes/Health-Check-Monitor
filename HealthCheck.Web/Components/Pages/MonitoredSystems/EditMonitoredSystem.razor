@@ -48,7 +48,7 @@
                                Label="Status HTTP esperado"
                                Variant="Variant.Outlined"
                                T="int"
-                               ToStringFunc="@(c => c == 0 ? "Escolha um valor" : $"{(HttpStatusCode)c}")"
+                               ToStringFunc="@(c => c == 0 ? "Escolha um valor" : $"{c} {(HttpStatusCode)c}")"
                                Immediate="true">
                         <MudSelectItem Value="200">200 OK</MudSelectItem>
                         <MudSelectItem Value="201">201 Created</MudSelectItem>
@@ -63,10 +63,9 @@
                         <MudSelectItem Value="503">503 Service Unavailable</MudSelectItem>
                     </MudSelect>
 
-                    <MudSwitch @bind-Checked="useCustomHttpStatus"
+                    <MudSwitch @bind-Value="useCustomHttpStatus"
                                Label="Status code customizado"
-                               Color="Color.Info"
-                               T="bool" />
+                               Color="Color.Info" />
 
                     @if (useCustomHttpStatus)
                     {
