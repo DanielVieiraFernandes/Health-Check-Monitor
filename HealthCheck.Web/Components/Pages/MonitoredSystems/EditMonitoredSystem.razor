@@ -40,34 +40,33 @@
                            Immediate="true">
                     <MudSelectItem Value="SystemType.WebApi">Web API</MudSelectItem>
                     <MudSelectItem Value="SystemType.Frontend">Front-end</MudSelectItem>
-                    <MudSelectItem Value="SystemType.SqlDatabase">Banco de Dados SQL</MudSelectItem>
-                    <MudSelectItem Value="SystemType.NoSqlDatabase">Banco de Dados NoSQL</MudSelectItem>
                 </MudSelect>
 
-                @* ── Status HTTP esperado (Web API + Front-end) ── *@
                 @if (monitoredSystem.SystemType is SystemType.WebApi or SystemType.Frontend)
                 {
-                    <MudSelect @bind-Value="monitoredSystem.ExpectedHttpStatus"
+                    <MudSelect @bind-Value="ExpectedHttpStatusCodeInt"
                                Label="Status HTTP esperado"
                                Variant="Variant.Outlined"
-                               T="HttpStatusCode?"
-                               ToStringFunc="@(c => c is null ? "200 (padrão)" : $"{(int)c} {c}")"
+                               T="int"
+                               ToStringFunc="@(c => c == 0 ? "Escolha um valor" : $"{(HttpStatusCode)c}")"
                                Immediate="true">
-                        <MudSelectItem Value="(HttpStatusCode?)null">200 OK (padrão)</MudSelectItem>
-                        <MudSelectItem Value="HttpStatusCode.OK">200 OK</MudSelectItem>
-                        <MudSelectItem Value="HttpStatusCode.Created">201 Created</MudSelectItem>
-                        <MudSelectItem Value="HttpStatusCode.NoContent">204 No Content</MudSelectItem>
-                        <MudSelectItem Value="HttpStatusCode.MovedPermanently">301 Moved Permanently</MudSelectItem>
-                        <MudSelectItem Value="HttpStatusCode.Found">302 Found</MudSelectItem>
-                        <MudSelectItem Value="HttpStatusCode.BadRequest">400 Bad Request</MudSelectItem>
-                        <MudSelectItem Value="HttpStatusCode.Unauthorized">401 Unauthorized</MudSelectItem>
-                        <MudSelectItem Value="HttpStatusCode.Forbidden">403 Forbidden</MudSelectItem>
-                        <MudSelectItem Value="HttpStatusCode.NotFound">404 Not Found</MudSelectItem>
-                        <MudSelectItem Value="HttpStatusCode.InternalServerError">500 Internal Server Error</MudSelectItem>
-                        <MudSelectItem Value="HttpStatusCode.ServiceUnavailable">503 Service Unavailable</MudSelectItem>
+                        <MudSelectItem Value="200">200 OK</MudSelectItem>
+                        <MudSelectItem Value="201">201 Created</MudSelectItem>
+                        <MudSelectItem Value="204">204 No Content</MudSelectItem>
+                        <MudSelectItem Value="301">301 Moved Permanently</MudSelectItem>
+                        <MudSelectItem Value="302">302 Found</MudSelectItem>
+                        <MudSelectItem Value="400">400 Bad Request</MudSelectItem>
+                        <MudSelectItem Value="401">401 Unauthorized</MudSelectItem>
+                        <MudSelectItem Value="403">403 Forbidden</MudSelectItem>
+                        <MudSelectItem Value="404">404 Not Found</MudSelectItem>
+                        <MudSelectItem Value="500">500 Internal Server Error</MudSelectItem>
+                        <MudSelectItem Value="503">503 Service Unavailable</MudSelectItem>
                     </MudSelect>
 
-                    <MudSwitch @bind-Checked="useCustomHttpStatus" Label="Status code customizado" Color="Color.Info" T="bool" />
+                    <MudSwitch @bind-Checked="useCustomHttpStatus"
+                               Label="Status code customizado"
+                               Color="Color.Info"
+                               T="bool" />
 
                     @if (useCustomHttpStatus)
                     {
@@ -80,7 +79,6 @@
                     }
                 }
 
-                @* ── Texto esperado no body (Front-end) ── *@
                 @if (monitoredSystem.SystemType == SystemType.Frontend)
                 {
                     <MudTextField @bind-Value="monitoredSystem.ExpectedBodyText"
@@ -107,30 +105,6 @@
             </MudStack>
         </MudPaper>
     </MudItem>
-
-  @*   <MudItem xs="12" lg="6" Class="dialog-column top-row-column">
-        <MudPaper Class="preview-card top-row-card pa-4" Elevation="0">
-            <MudStack Spacing="2">
-                <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Pré-visualização</MudText>
-                <MudDivider />
-
-                <MudText Typo="Typo.caption" Color="Color.Secondary">Nome</MudText>
-                <MudText Typo="Typo.body1" Class="preview-name" Title="@GetPreviewName()">@GetPreviewName()</MudText>
-
-                <MudText Typo="Typo.caption" Color="Color.Secondary">URL</MudText>
-                <MudText Typo="Typo.body2" Class="preview-url" Title="@GetPreviewUrl()">@GetPreviewUrl()</MudText>
-
-                <MudText Typo="Typo.caption" Color="Color.Secondary">Descrição</MudText>
-                <MudText Typo="Typo.body2">@GetPreviewDescription()</MudText>
-
-                @if (!IsCreateMode)
-                {
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Criado em</MudText>
-                    <MudText Typo="Typo.body2">@FormatDateTime(monitoredSystem.CreatedAt)</MudText>
-                }
-            </MudStack>
-        </MudPaper>
-    </MudItem> *@
 
     @if (!IsCreateMode)
     {
@@ -181,8 +155,24 @@
     private MonitoredSystem originalMonitoredSystem { get; set; } = new();
     private string? lastSystemCheckResponse;
     private int validationVersion;
-    private bool useCustomHttpStatus;
+    private bool useCustomHttpStatus
+    {
+        get => _useCustomHttpStatus;
+        set
+        {
+            _useCustomHttpStatus = value;
+            if (!value)
+                customHttpStatusText = string.Empty;
+        }
+    }
+    private bool _useCustomHttpStatus;
     private string customHttpStatusText = "";
+
+    private int ExpectedHttpStatusCodeInt
+    {
+        get => monitoredSystem.ExpectedHttpStatus is null ? 0 : (int)monitoredSystem.ExpectedHttpStatus.Value;
+        set => monitoredSystem.ExpectedHttpStatus = value == 0 ? null : (HttpStatusCode)value;
+    }
 
     public HttpStatusCode? GetEffectiveHttpStatus()
     {
@@ -228,8 +218,10 @@
         if (IsCreateMode || loadingState.IsLoading)
             return;
 
+        //Recupera o Id do sistema monitorado a ser excluído
         var idToDelete = monitoredSystem.Id != Guid.Empty ? monitoredSystem.Id : MonitoredSystemId;
 
+        //Caso não consiga recuperar o Id, exibe mensagem de erro e fecha o diálogo
         if (idToDelete is null || idToDelete == Guid.Empty)
         {
             snackbar.Add("Não foi possível identificar o sistema monitorado para exclusão.", Severity.Error);
@@ -264,6 +256,8 @@
         try
         {
             loadingState.Show(IsCreateMode ? "Registrando sistema monitorado..." : "Salvando alterações do sistema monitorado...");
+
+            monitoredSystem.ExpectedHttpStatus = GetEffectiveHttpStatus();
 
             if (IsCreateMode)
             {

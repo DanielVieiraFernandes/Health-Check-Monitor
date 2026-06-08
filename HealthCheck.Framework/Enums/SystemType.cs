@@ -8,11 +8,5 @@ public enum SystemType
     WebApi = 1,
 
     [Description("Front-end")]
-    Frontend = 2,
-
-    [Description("Banco de Dados SQL")]
-    SqlDatabase = 3,
-
-    [Description("Banco de Dados NoSQL")]
-    NoSqlDatabase = 4
+    Frontend = 2
 }

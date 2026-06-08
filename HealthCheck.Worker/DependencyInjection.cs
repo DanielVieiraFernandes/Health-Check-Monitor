@@ -28,8 +28,6 @@ public static class DependencyInjection
             new WebApiSystemChecker(sp.GetRequiredService<IHttpClientFactory>(), 10));
         services.AddSingleton<ISystemChecker>(sp =>
             new FrontendSystemChecker(sp.GetRequiredService<IHttpClientFactory>(), 10));
-        services.AddSingleton<ISystemChecker, SqlDatabaseSystemChecker>();
-        services.AddSingleton<ISystemChecker, NoSqlDatabaseSystemChecker>();
     }
 
     private static void AddFrameworkServices(IServiceCollection services, IConfiguration configuration)
