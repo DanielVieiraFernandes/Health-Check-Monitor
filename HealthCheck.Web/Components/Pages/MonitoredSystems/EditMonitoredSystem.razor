@@ -48,35 +48,14 @@
                                Label="Status HTTP esperado"
                                Variant="Variant.Outlined"
                                T="int"
-                               ToStringFunc="@(c => c == 0 ? "Escolha um valor" : $"{c} {(HttpStatusCode)c}")"
-                               Immediate="true"
-                               Disabled="useCustomHttpStatus">
-                        <MudSelectItem Value="200">200 OK</MudSelectItem>
-                        <MudSelectItem Value="201">201 Created</MudSelectItem>
-                        <MudSelectItem Value="204">204 No Content</MudSelectItem>
-                        <MudSelectItem Value="301">301 Moved Permanently</MudSelectItem>
-                        <MudSelectItem Value="302">302 Found</MudSelectItem>
-                        <MudSelectItem Value="400">400 Bad Request</MudSelectItem>
-                        <MudSelectItem Value="401">401 Unauthorized</MudSelectItem>
-                        <MudSelectItem Value="403">403 Forbidden</MudSelectItem>
-                        <MudSelectItem Value="404">404 Not Found</MudSelectItem>
-                        <MudSelectItem Value="500">500 Internal Server Error</MudSelectItem>
-                        <MudSelectItem Value="503">503 Service Unavailable</MudSelectItem>
+                               ToStringFunc="@(c => c == 0 ? "Escolha um valor" : $"{(int)c} {(HttpStatusCode)c}")"
+                               Immediate="true">
+                        <MudSelectItem T="int" Value="0">Escolha um valor</MudSelectItem>
+                        @foreach (var code in AllHttpStatusCodes)
+                        {
+                            <MudSelectItem T="int" Value="@((int)code)">@((int)code) @(code.ToString())</MudSelectItem>
+                        }
                     </MudSelect>
-
-                    <MudSwitch @bind-Value="useCustomHttpStatus"
-                               Label="Status code customizado"
-                               Color="Color.Info" />
-
-                    @if (useCustomHttpStatus)
-                    {
-                        <MudTextField @bind-Value="customHttpStatusText"
-                                      Label="Digite o status code"
-                                      Variant="Variant.Outlined"
-                                      Placeholder="418"
-                                      MaxLength="3"
-                                      Immediate="true" />
-                    }
                 }
 
                 @if (monitoredSystem.SystemType == SystemType.Frontend)
@@ -133,7 +112,7 @@
     }
 </MudGrid>
 
-@code {
+    @code {
 
     [CascadingParameter(Name = "UserSession")]
     public UserSessionInfo? UserSession { get; set; }
@@ -156,30 +135,14 @@
     private MonitoredSystem originalMonitoredSystem { get; set; } = new();
     private string? lastSystemCheckResponse;
     private int validationVersion;
-    private bool useCustomHttpStatus
-    {
-        get => _useCustomHttpStatus;
-        set
-        {
-            _useCustomHttpStatus = value;
-            if (!value)
-                customHttpStatusText = string.Empty;
-        }
-    }
-    private bool _useCustomHttpStatus;
-    private string customHttpStatusText = "";
+
+    private static readonly HttpStatusCode[] AllHttpStatusCodes =
+        Enum.GetValues(typeof(HttpStatusCode)).Cast<HttpStatusCode>().ToArray();
 
     private int ExpectedHttpStatusCodeInt
     {
         get => monitoredSystem.ExpectedHttpStatus is null ? 0 : (int)monitoredSystem.ExpectedHttpStatus.Value;
         set => monitoredSystem.ExpectedHttpStatus = value == 0 ? null : (HttpStatusCode)value;
-    }
-
-    public HttpStatusCode? GetEffectiveHttpStatus()
-    {
-        if (useCustomHttpStatus && int.TryParse(customHttpStatusText, out var code) && Enum.IsDefined(typeof(HttpStatusCode), code))
-            return (HttpStatusCode)code;
-        return monitoredSystem.ExpectedHttpStatus;
     }
 
     protected override async Task OnInitializedAsync()
@@ -258,7 +221,7 @@
         {
             loadingState.Show(IsCreateMode ? "Registrando sistema monitorado..." : "Salvando alterações do sistema monitorado...");
 
-            monitoredSystem.ExpectedHttpStatus = GetEffectiveHttpStatus();
+            // ExpectedHttpStatus já está bound via ExpectedHttpStatusCodeInt
 
             if (IsCreateMode)
             {
