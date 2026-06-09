@@ -1,5 +1,6 @@
 @page "/sistemas"
 @attribute [Authorize]
+@using HealthCheck.Framework.Enums
 @using HealthCheck.Framework.Services.Database.MonitoredSystemService.Filters
 @inject LoadingState loadingState
 @implements IDisposable
@@ -12,6 +13,7 @@
         <MudStack Spacing="0">
             <MudText Typo="Typo.h4" Class="font-weight-bold">Sistemas monitorados</MudText>
             <MudText Typo="Typo.subtitle2" Color="Color.Secondary">Visão geral de status e monitoramento em tempo real.</MudText>
+            <MudChip T="string" Label="true" Variant="Variant.Text" Color="Color.Info">@monitoredSystems.Count sistema(s)</MudChip>
         </MudStack>
 
         <MudButton Variant="Variant.Filled"
@@ -104,7 +106,7 @@
                 <MudItem xs="12" sm="6" lg="4">
                     <div class="system-card-shell" role="button" tabindex="0" @onclick="() => OpenMonitoredSystemDialog(system.Id)">
                         <MudPaper Class="@SystemCardClass" Elevation="2">
-                            <MudStack Spacing="2">
+                            <MudStack Spacing="2" Class="system-card-content">
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
                                     <MudText Typo="Typo.h6" Class="font-weight-bold system-name" Title="@system.Name">@system.Name</MudText>
                                     <MudChip T="string" Label="true" Variant="Variant.Filled" Color="@GetStatusColor(system.LastStatus)">
@@ -112,22 +114,29 @@
                                     </MudChip>
                                 </MudStack>
 
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="type-line">
+                                    <MudIcon Icon="@(system.SystemType == SystemType.WebApi ? Icons.Material.Filled.Api : Icons.Material.Filled.Language)" Size="Size.Small" Color="Color.Info" />
+                                    <MudChip T="string" Label="true" Variant="Variant.Text" Color="@(system.SystemType == SystemType.WebApi ? Color.Info : Color.Warning)">
+                                        @system.SystemType.GetDescription()
+                                    </MudChip>
+                                </MudStack>
+
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="url-line">
-                                    <MudIcon Icon="@Icons.Material.Filled.Public" Size="Size.Small" Color="Color.Info" />
+                                    <MudIcon Icon="@Icons.Material.Filled.Link" Size="Size.Small" Color="Color.Info" />
                                     <MudLink Href="@system.Url" Target="_blank" Typo="Typo.body2" Class="system-url" Title="@system.Url" @onclick:stopPropagation="true">@system.Url</MudLink>
                                 </MudStack>
 
                                 <MudDivider />
 
-                                <MudGrid>
-                                    <MudItem xs="12">
+                                <MudGrid Class="card-dates">
+                                    <MudItem xs="6" Class="date-block">
                                         <MudStack Spacing="0" AlignItems="AlignItems.Start">
                                             <MudText Typo="Typo.caption" Color="Color.Secondary">Última checagem</MudText>
                                             <MudText Typo="Typo.body1">@FormatDateTime(system.LastCheckedAt)</MudText>
                                         </MudStack>
                                     </MudItem>
-                                    <MudItem xs="12">
-                                        <MudStack Spacing="0">
+                                    <MudItem xs="6" Class="date-block">
+                                        <MudStack Spacing="0" AlignItems="AlignItems.End">
                                             <MudText Typo="Typo.caption" Color="Color.Secondary">Criado em</MudText>
                                             <MudText Typo="Typo.body2">@FormatDateTime(system.CreatedAt)</MudText>
                                         </MudStack>

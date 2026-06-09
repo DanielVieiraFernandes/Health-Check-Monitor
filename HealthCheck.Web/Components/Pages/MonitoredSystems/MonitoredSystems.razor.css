@@ -33,7 +33,7 @@
     border-radius: 16px;
     border: 1px solid var(--monitored-system-card-border, rgba(203, 213, 225, 0.9)) !important;
     transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
-    min-height: 200px;
+    height: 220px;
     cursor: pointer;
     will-change: transform;
 }
@@ -91,6 +91,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     margin-right: 12px;
+    font-size: 1rem;
 }
 
 .monitored-systems-page ::deep .system-card .mud-chip {
@@ -177,6 +178,23 @@
     border-radius: 20px;
     border: 1px dashed rgba(203, 213, 225, 0.95);
     background: linear-gradient(150deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.88));
+}
+
+.monitored-systems-page ::deep .system-card .system-card-content {
+    height: 100%;
+    justify-content: space-between;
+}
+
+.monitored-systems-page ::deep .system-card .type-line {
+    flex-shrink: 0;
+}
+
+.monitored-systems-page ::deep .system-card .card-dates {
+    flex-shrink: 0;
+}
+
+.monitored-systems-page ::deep .system-card .card-dates .date-block {
+    min-width: 0;
 }
 
 :global(.theme-dark) .page-hero,
