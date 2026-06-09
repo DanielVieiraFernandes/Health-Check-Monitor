@@ -132,7 +132,8 @@
     flex-wrap: nowrap !important;
 }
 
-.url-line ::deep .system-url {
+.url-line ::deep .system-url,
+.url-line ::deep a.system-url {
     display: inline-block;
     flex: 1 1 auto;
     min-width: 0;

@@ -123,7 +123,7 @@
 
                                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="url-line">
                                     <MudIcon Icon="@Icons.Material.Filled.Link" Size="Size.Small" Color="Color.Info" />
-                                    <MudLink Href="@system.Url" Target="_blank" Typo="Typo.body2" Class="system-url" Title="@system.Url" @onclick:stopPropagation="true">@system.Url</MudLink>
+                                    <a href="@system.Url" target="_blank" class="system-url" title="@system.Url" @onclick:stopPropagation="true">@system.Url</a>
                                 </MudStack>
 
                                 <MudDivider />

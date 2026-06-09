@@ -221,8 +221,6 @@
         {
             loadingState.Show(IsCreateMode ? "Registrando sistema monitorado..." : "Salvando alterações do sistema monitorado...");
 
-            // ExpectedHttpStatus já está bound via ExpectedHttpStatusCodeInt
-
             if (IsCreateMode)
             {
                 monitoredSystem.UserId = UserSession!.UserId;
