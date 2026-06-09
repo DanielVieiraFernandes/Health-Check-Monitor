@@ -129,6 +129,7 @@
 .url-line {
     overflow: hidden;
     min-width: 0;
+    flex-wrap: nowrap !important;
 }
 
 .url-line ::deep .system-url {
