@@ -12,7 +12,7 @@
 
 ### 1. Logging centralizado — Serilog + Seq
 
-**Status:** ⬜ Pendente
+**Status:** ✅ Concluído — branch `feature/serilog-seq`, commit `dbe9aee`
 
 **Objetivo:** Unificar logs do Worker e Web num dashboard com busca e filtros.
 
