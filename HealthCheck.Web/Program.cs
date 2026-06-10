@@ -1,5 +1,6 @@
 using HealthCheck.Framework.Repositories;
 using HealthCheck.Framework.Services;
+using HealthCheck.Framework.Utils;
 using HealthCheck.Web.Components;
 using HealthCheck.Web.Components.Shared.Feedback;
 using HealthCheck.Web.Services.Authentication;
@@ -20,9 +21,10 @@ public class Program
 
         builder.Host.UseSerilog();
 
-        Log.Logger = new LoggerConfiguration()
-            .ReadFrom.Configuration(builder.Configuration)
-            .CreateLogger();
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.WithProperty("App", "Web")
+    .CreateLogger();
 
         // Add services to the container.
         builder.Services.AddRazorComponents()
@@ -78,6 +80,8 @@ public class Program
         CultureInfo.CurrentUICulture = cultureInfo;
 
         var app = builder.Build();
+
+        RecordLog.Initialize(app.Services.GetRequiredService<ILoggerFactory>());
 
         // Configure the HTTP request pipeline.
         if (!app.Environment.IsDevelopment())

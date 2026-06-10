@@ -28,6 +28,7 @@ builder.Configuration["Serilog:WriteTo:0:Args:path"] = Path.Combine(logDirectory
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.WithProperty("App", "Worker")
     .CreateLogger();
 
 builder.Services.AddSerilog();

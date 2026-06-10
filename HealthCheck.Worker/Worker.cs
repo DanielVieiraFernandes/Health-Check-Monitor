@@ -67,7 +67,7 @@ public class Worker : BackgroundService
                 if (_workerConfig == null)
                 {
                     //Aguarda um tempo antes de tentar novamente para evitar loop de erros
-                    _logger.LogError("Config do worker não está disponível. Verifique os logs anteriores para identificar falhas na obtenção da configuração.");
+                    _logger.LogError("▶ Config | Status=Indisponivel");
                     await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
                     _refreshConfigLock++;
                     continue;
@@ -82,7 +82,7 @@ public class Worker : BackgroundService
 
                 if (_logger.IsEnabled(LogLevel.Information))
                 {
-                    _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                    _logger.LogInformation("▶ Worker | Status=Executando Time={time}", DateTimeOffset.Now);
                 }
 
                 //============================================================================================
@@ -93,7 +93,7 @@ public class Worker : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogCritical(ex, "Erro crítico no worker. A execução será interrompida.");
+                _logger.LogCritical(ex, "▶ Worker | Status=ErroCritico");
                 //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
                 //Derruba o serviço para enviar uma notificação para o desenvolvedor!
                 //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
@@ -187,18 +187,17 @@ public class Worker : BackgroundService
                 if (_workerConfig == null)
                     throw new InvalidOperationException("Não foi possível carregar a configuração do worker.");
 
-                _logger.LogInformation("Config do worker atualizada. Intervalo={Intervalo}s", _workerConfig.MonitoringIntervalSeconds);
-                _logger.LogWarning("Config do worker atualizada por fallback, verificar o status do banco de dados para entender o motivo.");
+                _logger.LogWarning("▶ Config atualizada | Intervalo={Intervalo}s Source=Fallback", _workerConfig.MonitoringIntervalSeconds);
 
                 return;
             }
 
             _workerConfig = result.Success!;
-            _logger.LogInformation("Config do worker atualizada. Intervalo={Intervalo}s", _workerConfig.MonitoringIntervalSeconds);
+            _logger.LogInformation("▶ Config atualizada | Intervalo={Intervalo}s Source=Banco", _workerConfig.MonitoringIntervalSeconds);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Falha ao atualizar config do banco. Mantendo última config em memória.");
+            _logger.LogWarning(ex, "▶ Config | Status=FalhaAtualizacao Source=Banco");
         }
         finally
         {

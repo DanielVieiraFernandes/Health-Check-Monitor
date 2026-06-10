@@ -51,7 +51,7 @@ public class MonitoringServices
             {
                 var failure = resultPending.Failure;
                 var errors = string.Join("\n - ", failure?.Errors.Select(e => e.ErrorMessage) ?? ["!!!Motivo desconhecido!!!"]);
-                _logger.LogWarning("Falha ao obter os sistemas pendentes. Status: {StatusCode}. Motivo: {Reason}", failure?.StatusCode, errors);
+                _logger.LogWarning("▶ Monitoramento | Status=FalhaObterPendentes StatusCode={StatusCode} Reason={Reason}", failure?.StatusCode, errors);
                 return;
             }
 
@@ -60,7 +60,7 @@ public class MonitoringServices
             //Caso não haja sistemas monitorados pendentes para verificação, registra o aviso e retorna para a próxima execução agendada
             if (pendentes.Count == 0)
             {
-                _logger.LogInformation("Nenhum sistema monitorado pendente para verificação.");
+                _logger.LogInformation("▶ Monitoramento | Status=SemPendentes");
                 return;
             }
 
@@ -99,7 +99,7 @@ public class MonitoringServices
                     if (!validation)
                     {
                         currentStatus = HealthStatus.Unknown;
-                        _logger.LogWarning("URL bloqueada para verificação. SistemaId: {SystemId}, Url: {Url}, Motivo: Não passou na validação de destinos seguros", monitoredSystem.Id, monitoredSystem.Url);
+                        _logger.LogWarning("▶ URL bloqueada | SystemId={SystemId} Url={Url} Reason=NaoPassouValidacao", monitoredSystem.Id, monitoredSystem.Url);
 
                         systemCheck.ErrorMessage = $"A URL: \"{monitoredSystem.Url}\" foi bloqueada para verificação. Não passou na validação de destinos seguros.";
                         return;
@@ -137,7 +137,7 @@ public class MonitoringServices
                     //O ID DO SISTEMA MONITORADO E A URL.
                     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                     currentStatus = HealthStatus.Unknown;
-                    _logger.LogWarning(ex, "Falha ao processar a URL pendente. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
+                    _logger.LogWarning(ex, "▶ URL falhou | SystemId={SystemId} Url={Url}", monitoredSystem.Id, monitoredSystem.Url);
 
                     systemCheck.ErrorMessage = $"Falha ao processar a URL: \"{monitoredSystem.Url}\". Motivo: {ex.Message}";
                     systemCheck.ExceptionType = GetExceptionName(ex, stoppingToken);
@@ -159,7 +159,7 @@ public class MonitoringServices
                     var resultUpdate = await TryUpdateInformationCheck(monitoredSystem, systemCheck, currentStatus, workerConfig);
 
                     if (!resultUpdate)
-                        _logger.LogError("Falha ao atualizar as informações do sistema monitorado. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
+                        _logger.LogError("▶ Atualizacao falhou | SystemId={SystemId} Url={Url}", monitoredSystem.Id, monitoredSystem.Url);
 
                     stopwatch.Reset();
                     semaphore.Release();
@@ -174,7 +174,7 @@ public class MonitoringServices
             //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             //TODO: deve enviar uma notificação para os responsáveis informando sobre a falha no processamento das URLs pendentes
             //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-            _logger.LogError(ex, "Falha ao processar URLs pendentes no worker.");
+            _logger.LogError(ex, "▶ Worker | Status=FalhaProcessamento");
         }
     }
 
@@ -197,14 +197,14 @@ public class MonitoringServices
 
                 _cleaningDBAt = DateTime.Now;
 
-                _logger.LogInformation("Limpeza de dados antigos realizada com sucesso.");
+                _logger.LogInformation("▶ Limpeza concluída | Status=Sucesso");
             }
             catch (Exception ex)
             {
                 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 //TODO: deve enviar uma notificação para os responsáveis informando sobre a falha na limpeza de dados antigos
                 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                _logger.LogError(ex, "Falha ao realizar a limpeza de dados antigos.");
+                _logger.LogError(ex, "▶ Limpeza falhou | Status=Erro");
             }
         }
     }
@@ -237,7 +237,7 @@ public class MonitoringServices
             catch (Exception ex)
             {
                 //GRAVA O LOG DE FALHA AO TENTAR REGISTRAR A CHECAGEM REALIZADA NO BANCO DE DADOS, INFORMANDO O ID DO SISTEMA MONITORADO E A URL.
-                _logger.LogError(ex, "Falha ao tentar registrar a checagem realizada no banco de dados. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
+                _logger.LogError(ex, "▶ Check falhou | Action=Registrar SystemId={SystemId} Url={Url}", monitoredSystem.Id, monitoredSystem.Url);
                 isSuccess = false;
             }
 
@@ -265,7 +265,7 @@ public class MonitoringServices
                     {
                         var failure = result.Failure;
                         var errors = string.Join("\n - ", failure?.Errors.Select(e => e.ErrorMessage) ?? ["!!!Motivo desconhecido!!!"]);
-                        _logger.LogError("Falha ao atualizar o sistema monitorado. SistemaId: {SystemId}, Url: {Url}, Status: {StatusCode}, Motivo: {Reason}",
+                        _logger.LogError("▶ Atualizacao falhou | SystemId={SystemId} Url={Url} StatusCode={StatusCode} Reason={Reason}",
                                          monitoredSystem.Id, monitoredSystem.Url, failure?.StatusCode, errors);
                         isSuccess = false;
                         continue;
@@ -279,7 +279,7 @@ public class MonitoringServices
                 catch (Exception ex)
                 {
                     //GRAVA O LOG DE FALHA AO ATUALIZAR O SISTEMA MONITORADO, INFORMANDO O ID DO SISTEMA MONITORADO E A URL.
-                    _logger.LogError(ex, "Falha ao atualizar o sistema monitorado. SistemaId: {SystemId}, Url: {Url}", monitoredSystem.Id, monitoredSystem.Url);
+                    _logger.LogError(ex, "▶ Atualizacao falhou | SystemId={SystemId} Url={Url}", monitoredSystem.Id, monitoredSystem.Url);
                     isSuccess = false;
                 }
 
