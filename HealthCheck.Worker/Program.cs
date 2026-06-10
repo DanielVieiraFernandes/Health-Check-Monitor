@@ -1,5 +1,8 @@
+using HealthCheck.Framework.Repositories;
+using HealthCheck.Framework.Services;
 using HealthCheck.Worker;
 using Serilog;
+
 
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //Tive que fazer essas alterações pois os logs não estavam sendo gravados na pasta do executável devido a restrições
@@ -33,7 +36,15 @@ Log.Logger = new LoggerConfiguration()
 builder.Services.AddSerilog();
 builder.Services.AddHostedService<Worker>();
 
-//Adiciona todas as dependências externas do Worker
+//=======================================================================================================================================
+//ADICIONA TODAS AS DEPENDÊNCIAS EXTERNAS DO WORKER
+//=======================================================================================================================================
+builder.Services.AddFrameworkServices(builder.Configuration);
+builder.Services.AddFrameworkRepositories();
+
+//=======================================================================================================================================
+//ADICIONA AS DEPENDÊNCIAS DO WORKER
+//=======================================================================================================================================
 builder.Services.AddWorkerDependencies(builder.Configuration);
 
 builder.Services.AddHttpClient();

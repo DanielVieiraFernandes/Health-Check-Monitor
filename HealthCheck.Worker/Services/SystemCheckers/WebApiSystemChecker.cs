@@ -1,7 +1,6 @@
-using System.Diagnostics;
-using System.Net;
 using HealthCheck.Framework.Enums;
 using HealthCheck.Framework.Models;
+using System.Diagnostics;
 
 namespace HealthCheck.Worker.Services.SystemCheckers;
 
@@ -19,7 +18,7 @@ public class WebApiSystemChecker(IHttpClientFactory httpClientFactory, int timeo
             using var response = await client.GetAsync(system.Url, ct);
             sw.Stop();
 
-            var expectedCode = system.ExpectedHttpStatus ?? HttpStatusCode.OK;
+            var expectedCode = system.ExpectedHttpStatus!;
             var body = await response.Content.ReadAsStringAsync(ct);
             var isHealthy = response.StatusCode == expectedCode;
 

@@ -13,7 +13,6 @@ public class EmailService
     private readonly EmailCredentials _credentials;
     private readonly SemaphoreSlim _smtpLock = new(1, 1);
     private readonly SmtpClient _smtpClient = new();
-    private readonly string _email;
     private readonly string _password;
 
     private const int MaxRetryAttempts = 3;
@@ -26,7 +25,6 @@ public class EmailService
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         // DESCRIPTOGRAFO UMA ÚNICA VEZ AS CREDENCIAIS PARA EVITAR CUSTO REPETIDO EM CADA DISPARO
         //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        _email = _SMTPCredentialProvider.Decrypt(_credentials.Email);
         _password = _SMTPCredentialProvider.Decrypt(_credentials.Password);
     }
 
@@ -52,7 +50,7 @@ public class EmailService
                     // ADICIONO AS CONFIGURAÇÕES DE REMETENTE, DESTINATÁRIO, ASSUNTO E CORPO DO E-MAIL
                     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                     var message = new MimeMessage();
-                    message.From.Add(new MailboxAddress("SISTEMA DE MONITORAMENTO", _email));
+                    message.From.Add(new MailboxAddress("SISTEMA DE MONITORAMENTO", _credentials.Email));
                     message.To.Add(new MailboxAddress(emailBody.Name, emailBody.To));
                     message.Subject = emailBody.Subject;
 
@@ -113,7 +111,7 @@ public class EmailService
 
         if (!_smtpClient.IsAuthenticated)
         {
-            await _smtpClient.AuthenticateAsync(_email, _password, cancellationToken);
+            await _smtpClient.AuthenticateAsync(_credentials.Email, _password, cancellationToken);
         }
     }
 

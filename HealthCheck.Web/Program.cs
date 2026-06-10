@@ -56,8 +56,8 @@ public class Program
         builder.Services.AddScoped<AuthenticationService>();
         builder.Services.AddScoped<AuthenticationStateProvider, CookieAuthenticationStateProvider>();
 
-        builder.Services.AddServices(builder.Configuration);
-        builder.Services.AddRepositories();
+        builder.Services.AddFrameworkServices(builder.Configuration);
+        builder.Services.AddFrameworkRepositories();
 
         //OBS: Por enquanto, irei manter a cultura fixa para pt-BR
 

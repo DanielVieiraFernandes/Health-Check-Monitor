@@ -4,7 +4,6 @@ using HealthCheck.Framework.Services.Database.MonitoredSystemService;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService.DTOS;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService.Validators;
 using HealthCheck.Framework.Services.Database.SystemChecksService;
-using System.Diagnostics;
 using HealthCheck.Worker.Services.SystemCheckers;
 
 namespace HealthCheck.Worker.Services;
@@ -196,9 +195,6 @@ public class MonitoringServices
             }
             catch (Exception ex)
             {
-                //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                //TODO: deve enviar uma notificação para os responsáveis informando sobre a falha na limpeza de dados antigos
-                //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 _logger.LogError(ex, "Falha ao realizar a limpeza de dados antigos.");
                 await _notificationService.NotifyAdminAlertAsync(
                     alertKey: "db-cleanup-failed",
