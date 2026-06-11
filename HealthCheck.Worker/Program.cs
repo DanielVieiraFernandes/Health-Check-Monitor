@@ -70,19 +70,19 @@ AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
     {
         fatalException = ex;
         shutdownReason = "A aplicação foi encerrada por exceção não tratada (AppDomain).";
-         Log.Fatal(ex, "▶ Fatal | Tipo=UnhandledException");
+        Log.Fatal(ex, "▶ Fatal | Tipo=UnhandledException");
         return;
     }
 
     shutdownReason = "A aplicação foi encerrada por falha crítica não tratada.";
-     Log.Fatal("▶ Fatal | Tipo=CriticaNaoTratada");
+    Log.Fatal("▶ Fatal | Tipo=CriticaNaoTratada");
 };
 
 TaskScheduler.UnobservedTaskException += (_, eventArgs) =>
 {
     fatalException = eventArgs.Exception;
     shutdownReason = "A aplicação registrou exceção não observada em tarefa assíncrona.";
-     Log.Fatal(eventArgs.Exception, "▶ Fatal | Tipo=UnobservedTaskException");
+    Log.Fatal(eventArgs.Exception, "▶ Fatal | Tipo=UnobservedTaskException");
     eventArgs.SetObserved();
 };
 
