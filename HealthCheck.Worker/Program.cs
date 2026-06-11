@@ -70,19 +70,19 @@ AppDomain.CurrentDomain.UnhandledException += (_, eventArgs) =>
     {
         fatalException = ex;
         shutdownReason = "A aplicação foi encerrada por exceção não tratada (AppDomain).";
-        Log.Fatal(ex, "Exceção não tratada capturada no domínio da aplicação.");
+         Log.Fatal(ex, "▶ Fatal | Tipo=UnhandledException");
         return;
     }
 
     shutdownReason = "A aplicação foi encerrada por falha crítica não tratada.";
-    Log.Fatal("Falha crítica não tratada capturada no domínio da aplicação.");
+     Log.Fatal("▶ Fatal | Tipo=CriticaNaoTratada");
 };
 
 TaskScheduler.UnobservedTaskException += (_, eventArgs) =>
 {
     fatalException = eventArgs.Exception;
     shutdownReason = "A aplicação registrou exceção não observada em tarefa assíncrona.";
-    Log.Fatal(eventArgs.Exception, "Exceção não observada capturada pelo agendador de tarefas.");
+     Log.Fatal(eventArgs.Exception, "▶ Fatal | Tipo=UnobservedTaskException");
     eventArgs.SetObserved();
 };
 
@@ -105,16 +105,23 @@ catch (Exception ex)
 {
     fatalException = ex;
     shutdownReason = "A aplicação foi encerrada por exceção durante a execução do host.";
-    Log.Fatal(ex, "O serviço falhou durante a execução do host.");
+    Log.Fatal(ex, "▶ Fatal | Tipo=HostFalhou");
 }
 finally
 {
+    //===================================================================================================================================
+    //ENVIA UMA NOTIFICAÇÃO DE ALERTA POR E-MAIL SE A APLICAÇÃO FOR ENCERRADA DE FORMA ANORMAL,
+    //FORNECENDO DETALHES SOBRE O MOTIVO DO ENCERRAMENTO
+    //===================================================================================================================================
     TrySendShutdownEmail(builder.Configuration, shutdownReason, fatalException);
     Log.CloseAndFlush();
 }
 
 static void TrySendShutdownEmail(IConfiguration configuration, string reason, Exception? exception)
 {
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // Recupera as configurações de e-mail do appsettings
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     var emailSettings = configuration.GetSection("EmailSettings");
     var smtpSection = emailSettings.GetSection("SMTPSettings");
 
@@ -122,6 +129,9 @@ static void TrySendShutdownEmail(IConfiguration configuration, string reason, Ex
     var from = smtpSection["Email"];
     var to = emailSettings["ShutdownAlertEmail"];
 
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    // Caso não encontre alguma configuração essencial, não tenta enviar o e-mail
+    //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     if (string.IsNullOrWhiteSpace(smtpHost) || string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to))
     {
         Log.Warning("▶ Shutdown | Status=EmailNaoEnviado Reason=ConfiguracoesAusentes");
@@ -160,6 +170,11 @@ static void TrySendShutdownEmail(IConfiguration configuration, string reason, Ex
     }
 }
 
+
+//=======================================================================================================================================
+// Gera a mensagem de corpo do e-mail de alerta de encerramento, 
+// incluindo detalhes sobre o motivo e a exceção, se disponível.
+//=======================================================================================================================================
 static string BuildShutdownEmailBody(string reason, Exception? exception)
 {
     var body = new StringBuilder()
@@ -169,6 +184,9 @@ static string BuildShutdownEmailBody(string reason, Exception? exception)
         .AppendLine($"Máquina: {Environment.MachineName}")
         .AppendLine($"Motivo: {reason}");
 
+    //===================================================================================================================================
+    //Caso haja uma exceção associada ao encerramento, inclui detalhes adicionais para ajudar na análise
+    //===================================================================================================================================
     if (exception is not null)
     {
         body.AppendLine()

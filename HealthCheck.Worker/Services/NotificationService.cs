@@ -75,7 +75,7 @@ public class NotificationService
 
         if (string.IsNullOrWhiteSpace(userEmail))
         {
-            _logger.LogWarning("Não foi possível identificar o e-mail do usuário {UserId} para envio de alerta.", userId);
+            _logger.LogWarning("▶ Alerta | Status=EmailNaoResolvido UserId={UserId}", userId);
             return;
         }
 
@@ -137,7 +137,7 @@ $"Detalhe técnico resumido:\n{safeExceptionSummary}"
 
             if (result.IsFailure)
             {
-                _logger.LogWarning("Falha ao enviar alerta por e-mail. Erros: {Errors}", string.Join(" | ", result.Failure!.Errors.Select(e => e.ErrorMessage)));
+                _logger.LogWarning("▶ Alerta | Status=EmailFalhou Errors={Errors}", string.Join(" | ", result.Failure!.Errors.Select(e => e.ErrorMessage)));
                 return;
             }
 
@@ -148,7 +148,7 @@ $"Detalhe técnico resumido:\n{safeExceptionSummary}"
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Falha inesperada ao montar/enviar alerta por e-mail.");
+            _logger.LogWarning(ex, "▶ Alerta | Status=FalhaInesperada");
         }
     }
 
@@ -169,7 +169,7 @@ $"Detalhe técnico resumido:\n{safeExceptionSummary}"
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Falha ao recuperar e-mail do usuário {UserId} para envio de alerta.", userId);
+            _logger.LogWarning(ex, "▶ Alerta | Status=ResolveEmailFalhou UserId={UserId}", userId);
         }
 
         return null;

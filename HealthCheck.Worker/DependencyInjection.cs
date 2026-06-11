@@ -42,7 +42,7 @@ public static class DependencyInjection
 
         if (string.IsNullOrEmpty(connectionString))
         {
-            Log.Fatal("A string de conexão para o banco de dados não foi configurada. Verifique as configurações e tente novamente.");
+            Log.Fatal("▶ Inicializacao | Status=Falha Reason=ConnectionStringAusente");
             return;
         }
 

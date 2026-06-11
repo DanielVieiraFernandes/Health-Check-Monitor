@@ -142,7 +142,7 @@ public class Worker : BackgroundService
             var result = await workerConfigService.Get();
 
             _workerConfig = result.Success!;
-            _logger.LogInformation("Config do worker atualizada. Intervalo={Intervalo}s", _workerConfig.MonitoringIntervalSeconds);
+            _logger.LogInformation("▶ Config atualizada | Intervalo={Intervalo}s Source=Banco", _workerConfig.MonitoringIntervalSeconds);
         }
         catch (Exception)
         {
