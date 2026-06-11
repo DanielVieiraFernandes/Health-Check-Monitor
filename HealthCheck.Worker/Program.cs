@@ -1,10 +1,10 @@
 using HealthCheck.Framework.Repositories;
 using HealthCheck.Framework.Services;
+using HealthCheck.Framework.Services.Cryptography;
 using HealthCheck.Worker;
 using Serilog;
 using System.Net;
 using System.Net.Mail;
-using System.Security.Cryptography;
 using System.Text;
 
 
@@ -105,7 +105,7 @@ catch (Exception ex)
 {
     fatalException = ex;
     shutdownReason = "A aplicação foi encerrada por exceção durante a execução do host.";
-    Log.Fatal(ex, "O serviço falhou ao iniciar.");
+    Log.Fatal(ex, "O serviço falhou durante a execução do host.");
 }
 finally
 {
@@ -128,20 +128,13 @@ static void TrySendShutdownEmail(IConfiguration configuration, string reason, Ex
         return;
     }
 
-    var encryptedPassword = configuration["SmtpHPassword"];
-    var aesKey = configuration["SmtpAes256GcmKey"];
-
-    if (string.IsNullOrWhiteSpace(encryptedPassword) || string.IsNullOrWhiteSpace(aesKey))
-    {
-        Log.Warning("▶ Shutdown | Status=EmailNaoEnviado Reason=CredenciaisAusentes");
-        return;
-    }
-
     try
     {
         var smtpPort = smtpSection.GetValue("Port", 587);
         var useSsl = smtpSection.GetValue("EnableSSL", true);
-        var password = DecryptAesGcm(encryptedPassword, aesKey);
+
+        var provider = new SMTPCredentialProvider(configuration);
+        var password = provider.Decrypt(configuration["SmtpHPassword"]!);
 
         using var message = new MailMessage(from, to)
         {
@@ -165,34 +158,6 @@ static void TrySendShutdownEmail(IConfiguration configuration, string reason, Ex
     {
         Log.Error(ex, "▶ Shutdown | Status=EmailFalhou");
     }
-}
-
-static string DecryptAesGcm(string cipherText, string keyBase64)
-{
-    const int keySizeInBytes = 32;
-    const int nonceSizeInBytes = 12;
-    const int tagSizeInBytes = 16;
-
-    var key = Convert.FromBase64String(keyBase64);
-
-    if (key.Length != keySizeInBytes)
-        throw new InvalidOperationException("A chave de criptografia SMTP deve ter 32 bytes (AES-256).");
-
-    var payload = Convert.FromBase64String(cipherText);
-
-    if (payload.Length <= nonceSizeInBytes + tagSizeInBytes)
-        throw new InvalidOperationException("Payload cifrado invalido.");
-
-    var nonce = payload[..nonceSizeInBytes];
-    var tag = payload[nonceSizeInBytes..(nonceSizeInBytes + tagSizeInBytes)];
-    var ciphertextBytes = payload[(nonceSizeInBytes + tagSizeInBytes)..];
-
-    var plainTextBytes = new byte[ciphertextBytes.Length];
-
-    using var aesGcm = new AesGcm(key, tagSizeInBytes);
-    aesGcm.Decrypt(nonce, ciphertextBytes, tag, plainTextBytes);
-
-    return Encoding.UTF8.GetString(plainTextBytes);
 }
 
 static string BuildShutdownEmailBody(string reason, Exception? exception)
