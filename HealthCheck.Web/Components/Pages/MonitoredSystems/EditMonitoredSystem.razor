@@ -1,5 +1,7 @@
 @inject LoadingState loadingState
 @inject IDialogService DialogService
+@using HealthCheck.Framework.Enums
+@using System.Net
 
 <MudGrid Class="edit-monitored-system-grid" Spacing="3">
     <MudItem xs="12" lg="12" Class="dialog-column top-row-column">
@@ -29,6 +31,46 @@
                               Error="@HasError(nameof(MonitoredSystem.Url))"
                               ErrorText="@GetError(nameof(MonitoredSystem.Url))" />
 
+                @* ── Tipo de sistema ── *@
+                <MudSelect @bind-Value="monitoredSystem.SystemType"
+                           Label="Tipo de sistema"
+                           Variant="Variant.Outlined"
+                           T="SystemType"
+                           ToStringFunc="@(t => t.GetDescription())"
+                           Immediate="true">
+                    <MudSelectItem Value="SystemType.WebApi">Web API</MudSelectItem>
+                    <MudSelectItem Value="SystemType.Frontend">Front-end</MudSelectItem>
+                </MudSelect>
+
+                @if (monitoredSystem.SystemType is SystemType.WebApi or SystemType.Frontend)
+                {
+                    <MudSelect @bind-Value="ExpectedHttpStatusCodeInt"
+                               Label="Status HTTP esperado"
+                               Variant="Variant.Outlined"
+                               T="int"
+                               ToStringFunc="@(c => c == 0 ? "Escolha um valor" : $"{(int)c} {(HttpStatusCode)c}")"
+                               Immediate="true">
+                        <MudSelectItem T="int" Value="0">Escolha um valor</MudSelectItem>
+                        @foreach (var code in AllHttpStatusCodes)
+                        {
+                            <MudSelectItem T="int" Value="@((int)code)">@((int)code) @(code.ToString())</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+
+                @if (monitoredSystem.SystemType == SystemType.Frontend)
+                {
+                    <MudTextField @bind-Value="monitoredSystem.ExpectedBodyText"
+                                  Label="Texto esperado no body (opcional)"
+                                  Variant="Variant.Outlined"
+                                  Placeholder="Painel"
+                                  HelperText="Se preenchido, verifica se a resposta contém este texto"
+                                  MaxLength="500"
+                                  Counter="500"
+                                  Immediate="true"
+                                  Clearable />
+                }
+
                 <MudTextField @bind-Value="monitoredSystem.Description"
                               @key="@($"description-{validationVersion}")"
                               Label="Descrição do sistema"
@@ -43,30 +85,6 @@
             </MudStack>
         </MudPaper>
     </MudItem>
-
-  @*   <MudItem xs="12" lg="6" Class="dialog-column top-row-column">
-        <MudPaper Class="preview-card top-row-card pa-4" Elevation="0">
-            <MudStack Spacing="2">
-                <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Pré-visualização</MudText>
-                <MudDivider />
-
-                <MudText Typo="Typo.caption" Color="Color.Secondary">Nome</MudText>
-                <MudText Typo="Typo.body1" Class="preview-name" Title="@GetPreviewName()">@GetPreviewName()</MudText>
-
-                <MudText Typo="Typo.caption" Color="Color.Secondary">URL</MudText>
-                <MudText Typo="Typo.body2" Class="preview-url" Title="@GetPreviewUrl()">@GetPreviewUrl()</MudText>
-
-                <MudText Typo="Typo.caption" Color="Color.Secondary">Descrição</MudText>
-                <MudText Typo="Typo.body2">@GetPreviewDescription()</MudText>
-
-                @if (!IsCreateMode)
-                {
-                    <MudText Typo="Typo.caption" Color="Color.Secondary">Criado em</MudText>
-                    <MudText Typo="Typo.body2">@FormatDateTime(monitoredSystem.CreatedAt)</MudText>
-                }
-            </MudStack>
-        </MudPaper>
-    </MudItem> *@
 
     @if (!IsCreateMode)
     {
@@ -94,7 +112,7 @@
     }
 </MudGrid>
 
-@code {
+    @code {
 
     [CascadingParameter(Name = "UserSession")]
     public UserSessionInfo? UserSession { get; set; }
@@ -117,6 +135,15 @@
     private MonitoredSystem originalMonitoredSystem { get; set; } = new();
     private string? lastSystemCheckResponse;
     private int validationVersion;
+
+    private static readonly HttpStatusCode[] AllHttpStatusCodes =
+        Enum.GetValues(typeof(HttpStatusCode)).Cast<HttpStatusCode>().ToArray();
+
+    private int ExpectedHttpStatusCodeInt
+    {
+        get => monitoredSystem.ExpectedHttpStatus is null ? 0 : (int)monitoredSystem.ExpectedHttpStatus.Value;
+        set => monitoredSystem.ExpectedHttpStatus = value == 0 ? null : (HttpStatusCode)value;
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -155,8 +182,10 @@
         if (IsCreateMode || loadingState.IsLoading)
             return;
 
+        //Recupera o Id do sistema monitorado a ser excluído
         var idToDelete = monitoredSystem.Id != Guid.Empty ? monitoredSystem.Id : MonitoredSystemId;
 
+        //Caso não consiga recuperar o Id, exibe mensagem de erro e fecha o diálogo
         if (idToDelete is null || idToDelete == Guid.Empty)
         {
             snackbar.Add("Não foi possível identificar o sistema monitorado para exclusão.", Severity.Error);

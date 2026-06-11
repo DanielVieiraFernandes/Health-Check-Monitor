@@ -1,4 +1,5 @@
 ﻿using HealthCheck.Framework.Enums;
+using System.Net;
 
 namespace HealthCheck.Framework.Models;
 
@@ -14,6 +15,14 @@ public sealed class MonitoredSystem : UtilsForModels
     public DateTime? LastCheckedAt { get; set; } = null;
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
+
+    public SystemType SystemType { get; set; } = SystemType.WebApi;
+
+    /// <summary>Código HTTP esperado. Null = usa default do tipo.</summary>
+    public HttpStatusCode? ExpectedHttpStatus { get; set; }
+
+    /// <summary>Texto esperado no body (Front-end). Null = não verifica.</summary>
+    public string? ExpectedBodyText { get; set; }
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // ATRIBUTOS UTILITÁRIOS PARA VALIDAÇÕES E CONSTRUIR QUERIES DINÂMICAS

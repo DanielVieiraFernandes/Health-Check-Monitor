@@ -115,3 +115,27 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* ===== Card: system-url truncation ===== */
+.url-line .system-url {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #1d4ed8;
+    text-decoration: none;
+}
+
+.url-line .system-url:hover {
+    color: #1e40af;
+    text-decoration: underline;
+}
+
+.theme-dark .url-line .system-url {
+    color: #7dd3fc;
+}
+
+.theme-dark .url-line .system-url:hover {
+    color: #bae6fd;
+}

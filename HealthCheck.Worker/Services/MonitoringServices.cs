@@ -4,8 +4,7 @@ using HealthCheck.Framework.Services.Database.MonitoredSystemService;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService.DTOS;
 using HealthCheck.Framework.Services.Database.MonitoredSystemService.Validators;
 using HealthCheck.Framework.Services.Database.SystemChecksService;
-using System.Diagnostics;
-using System.Net;
+using HealthCheck.Worker.Services.SystemCheckers;
 
 namespace HealthCheck.Worker.Services;
 
@@ -14,6 +13,8 @@ public class MonitoringServices
     private readonly ILogger<Worker> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IEnumerable<ISystemChecker> _checkers;
+    private readonly NotificationService _notificationService;
     private MonitoredSystemService? _monitoredSystemService = null;
     private SystemChecksService? _systemCheckService = null;
     private DateTime _cleaningDBAt = DateTime.Now;
@@ -22,11 +23,14 @@ public class MonitoringServices
     public MonitoringServices(ILogger<Worker> logger,
                               IServiceScopeFactory scopeFactory,
                               IHttpClientFactory httpClientFactory,
-                              IConfiguration configuration)
+                              IEnumerable<ISystemChecker> checkers,
+                              NotificationService notificationService)
     {
         _logger = logger;
         _scopeFactory = scopeFactory;
         _httpClientFactory = httpClientFactory;
+        _checkers = checkers;
+        _notificationService = notificationService;
     }
 
     /// <summary>
@@ -73,8 +77,6 @@ public class MonitoringServices
             //Paralelismo controlado para evitar sobrecarga 
             var semaphore = new SemaphoreSlim(workerConfig.MaxConcurrentChecks);
 
-            Stopwatch stopwatch = new();
-
             //Processa cada sistema monitorado pendente em paralelo, respeitando o limite de concorrência.
             var tasks = pendentes.Select(async monitoredSystem =>
             {
@@ -100,34 +102,22 @@ public class MonitoringServices
                     {
                         currentStatus = HealthStatus.Unknown;
                         _logger.LogWarning("▶ URL bloqueada | SystemId={SystemId} Url={Url} Reason=NaoPassouValidacao", monitoredSystem.Id, monitoredSystem.Url);
-
                         systemCheck.ErrorMessage = $"A URL: \"{monitoredSystem.Url}\" foi bloqueada para verificação. Não passou na validação de destinos seguros.";
                         return;
                     }
 
-                    //Crio um client para cada requisição para evitar problemas de concorrência
-                    //e garantir que cada verificação seja independente.
-                    var client = _httpClientFactory.CreateClient();
+                    //Usa o dispatcher de ISystemChecker para delegar a verificação ao checker apropriado
+                    var checker = _checkers.FirstOrDefault(c => c.SupportedType == monitoredSystem.SystemType)
+                        ?? _checkers.First();
 
-                    //Configuro um timeout de segundos para não esperar por
-                    //muito tempo uma resposta do sistema
-                    client.Timeout = TimeSpan.FromSeconds(workerConfig.TimeoutSeconds);
+                    var result = await checker.CheckAsync(monitoredSystem, stoppingToken);
 
-                    stopwatch.Start();
-                    //Realizo a requisição HTTP para a URL do sistema monitorado.
-                    using var response = await client.GetAsync(monitoredSystem.Url, stoppingToken);
-                    stopwatch.Stop();
-
-                    //Atualizo o status do sistema monitorado com base no código de resposta.
-                    currentStatus = response.StatusCode == HttpStatusCode.OK ? HealthStatus.Healthy : HealthStatus.Unhealthy;
-
-                    //Caso tenha uma resposta no body da requisição, registro ela no campo response para a auditoria
-                    var responseBody = await response.Content.ReadAsStringAsync();
-                    if (!string.IsNullOrEmpty(responseBody))
-                        systemCheck.SystemResponse = responseBody;
-
-                    //Registro a latência da resposta
-                    systemCheck.LatencyMs = stopwatch.ElapsedMilliseconds;
+                    currentStatus = result.Status;
+                    systemCheck.LatencyMs = result.LatencyMs;
+                    systemCheck.SystemResponse = result.Response;
+                    systemCheck.ErrorMessage = result.ErrorMessage;
+                    systemCheck.ExceptionType = result.ExceptionType;
+                    systemCheck.StackTrace = result.StackTrace;
                 }
                 catch (Exception ex)
                 {
@@ -147,10 +137,11 @@ public class MonitoringServices
                 {
                     systemCheck.Status = currentStatus;
 
-                    //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
-                    //TODO: Caso o status do sistema monitorado tenha mudado para Unhealthy ou Unknown, devo enviar um alerta (ex.: email, webhook, etc.)
-                    // para notificar os responsáveis sobre a indisponibilidade do sistema.
-                    //-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*
+                    if (monitoredSystem.LastStatus != currentStatus &&
+                        (currentStatus == HealthStatus.Unhealthy || currentStatus == HealthStatus.Unknown))
+                    {
+                        await NotifySystemOwnerStatusAlertAsync(monitoredSystem, currentStatus, stoppingToken);
+                    }
 
                     //*************************************************************************************************************************************************************************
                     //Tenta atualizar as informações do sistema monitorado
@@ -161,7 +152,6 @@ public class MonitoringServices
                     if (!resultUpdate)
                         _logger.LogError("▶ Atualizacao falhou | SystemId={SystemId} Url={Url}", monitoredSystem.Id, monitoredSystem.Url);
 
-                    stopwatch.Reset();
                     semaphore.Release();
                 }
             });
@@ -171,10 +161,17 @@ public class MonitoringServices
         }
         catch (Exception ex)
         {
-            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-            //TODO: deve enviar uma notificação para os responsáveis informando sobre a falha no processamento das URLs pendentes
-            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            //Notifica os administradores sobre a falha no processamento das URLs pendentes
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             _logger.LogError(ex, "▶ Worker | Status=FalhaProcessamento");
+            await _notificationService.NotifyAdminAlertAsync(
+                alertKey: "monitoring-execution-failed",
+                title: "Falha no processamento de URLs pendentes",
+                summary: "O Worker não conseguiu concluir o processamento do lote de URLs pendentes no ciclo atual.",
+                severity: LogLevel.Error,
+                exception: ex,
+                ct: stoppingToken);
         }
     }
 
@@ -201,12 +198,39 @@ public class MonitoringServices
             }
             catch (Exception ex)
             {
-                //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-                //TODO: deve enviar uma notificação para os responsáveis informando sobre a falha na limpeza de dados antigos
-                //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                //Notifica os administradores sobre a falha na limpeza de dados antigos
+                //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
                 _logger.LogError(ex, "▶ Limpeza falhou | Status=Erro");
+                await _notificationService.NotifyAdminAlertAsync(
+                    alertKey: "db-cleanup-failed",
+                    title: "Falha na limpeza de dados antigos",
+                    summary: "O Worker não conseguiu concluir a limpeza periódica dos registros antigos de monitoramento.",
+                    severity: LogLevel.Error,
+                    exception: ex,
+                    ct: stoppingToken);
             }
         }
+    }
+
+    private async Task NotifySystemOwnerStatusAlertAsync(
+        MonitoredSystem monitoredSystem,
+        HealthStatus currentStatus,
+        CancellationToken ct)
+    {
+        var summary =
+$"O sistema monitorado \"{monitoredSystem.Name}\" mudou para o status {currentStatus}.\n" +
+$"URL monitorada: {monitoredSystem.Url}\n" +
+$"Horário (UTC): {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}.";
+
+        await _notificationService.NotifyUserAlertAsync(
+            alertKey: $"status-change-{monitoredSystem.UserId}-{monitoredSystem.Id}-{currentStatus}",
+            userId: monitoredSystem.UserId,
+            userName: monitoredSystem.Name,
+            title: $"Alerta do sistema {monitoredSystem.Name}",
+            summary: summary,
+            severity: currentStatus == HealthStatus.Unhealthy ? LogLevel.Warning : LogLevel.Error,
+            ct: ct);
     }
 
     private async Task<bool> TryUpdateInformationCheck(MonitoredSystem monitoredSystem,

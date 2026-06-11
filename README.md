@@ -124,6 +124,19 @@ Todos os direitos estão reservados ao autor.
 
 ---
 
+## 📚 Documentação
+
+A documentação completa está em [`docs/`](docs/Home.md):
+
+| Seção | Conteúdo |
+|---|---|
+| [Domínio](docs/Domain-Overview.md) | Conceitos, regras de negócio, personas |
+| [Arquitetura](docs/Architecture-Overview.md) | C4 Model, containers, componentes |
+| [ADR](docs/ADR-001-Dapper.md) | Decisões de arquitetura registradas |
+| [Desenvolvimento](docs/Development-Setup.md) | Setup, estrutura, convenções, testes |
+
+---
+
 ## 👨‍💻 Autor
 
 Projeto desenvolvido por **Daniel Vieira Fernandes**.
