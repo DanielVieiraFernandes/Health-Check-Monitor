@@ -4,6 +4,7 @@ using HealthCheck.Worker;
 using Serilog;
 using System.Net;
 using System.Net.Mail;
+using System.Security.Cryptography;
 using System.Text;
 
 
@@ -90,7 +91,7 @@ applicationLifetime.ApplicationStopping.Register(() =>
     if (fatalException is null)
         shutdownReason = "A aplicação recebeu solicitação de parada.";
 
-    Log.Warning("Processo de encerramento do Worker iniciado.");
+    Log.Warning("▶ Shutdown | Motivo={Reason}", shutdownReason);
 });
 
 try
@@ -114,27 +115,33 @@ finally
 
 static void TrySendShutdownEmail(IConfiguration configuration, string reason, Exception? exception)
 {
-    var section = configuration.GetSection("ShutdownEmailNotification");
+    var emailSettings = configuration.GetSection("EmailSettings");
+    var smtpSection = emailSettings.GetSection("SMTPSettings");
 
-    if (!section.GetValue<bool>("Enabled"))
-        return;
-
-    var smtpHost = section["SmtpHost"];
-    var from = section["From"];
-    var to = section["To"];
+    var smtpHost = smtpSection["Host"];
+    var from = smtpSection["Email"];
+    var to = emailSettings["ShutdownAlertEmail"];
 
     if (string.IsNullOrWhiteSpace(smtpHost) || string.IsNullOrWhiteSpace(from) || string.IsNullOrWhiteSpace(to))
     {
-        Log.Warning("Notificação por e-mail de encerramento não enviada. Configurações obrigatórias ausentes.");
+        Log.Warning("▶ Shutdown | Status=EmailNaoEnviado Reason=ConfiguracoesAusentes");
+        return;
+    }
+
+    var encryptedPassword = configuration["SmtpHPassword"];
+    var aesKey = configuration["SmtpAes256GcmKey"];
+
+    if (string.IsNullOrWhiteSpace(encryptedPassword) || string.IsNullOrWhiteSpace(aesKey))
+    {
+        Log.Warning("▶ Shutdown | Status=EmailNaoEnviado Reason=CredenciaisAusentes");
         return;
     }
 
     try
     {
-        var smtpPort = section.GetValue("SmtpPort", 587);
-        var useSsl = section.GetValue("UseSsl", true);
-        var userName = section["UserName"];
-        var password = section["Password"];
+        var smtpPort = smtpSection.GetValue("Port", 587);
+        var useSsl = smtpSection.GetValue("EnableSSL", true);
+        var password = DecryptAesGcm(encryptedPassword, aesKey);
 
         using var message = new MailMessage(from, to)
         {
@@ -147,19 +154,45 @@ static void TrySendShutdownEmail(IConfiguration configuration, string reason, Ex
         {
             EnableSsl = useSsl,
             DeliveryMethod = SmtpDeliveryMethod.Network,
-            UseDefaultCredentials = false
+            UseDefaultCredentials = false,
+            Credentials = new NetworkCredential(from, password)
         };
 
-        if (!string.IsNullOrWhiteSpace(userName) && !string.IsNullOrWhiteSpace(password))
-            smtpClient.Credentials = new NetworkCredential(userName, password);
-
         smtpClient.Send(message);
-        Log.Information("E-mail de encerramento da aplicação enviado para {To}.", to);
+        Log.Information("▶ Shutdown | Status=EmailEnviado To={To}", to);
     }
     catch (Exception ex)
     {
-        Log.Error(ex, "Falha ao enviar e-mail de encerramento da aplicação.");
+        Log.Error(ex, "▶ Shutdown | Status=EmailFalhou");
     }
+}
+
+static string DecryptAesGcm(string cipherText, string keyBase64)
+{
+    const int keySizeInBytes = 32;
+    const int nonceSizeInBytes = 12;
+    const int tagSizeInBytes = 16;
+
+    var key = Convert.FromBase64String(keyBase64);
+
+    if (key.Length != keySizeInBytes)
+        throw new InvalidOperationException("A chave de criptografia SMTP deve ter 32 bytes (AES-256).");
+
+    var payload = Convert.FromBase64String(cipherText);
+
+    if (payload.Length <= nonceSizeInBytes + tagSizeInBytes)
+        throw new InvalidOperationException("Payload cifrado invalido.");
+
+    var nonce = payload[..nonceSizeInBytes];
+    var tag = payload[nonceSizeInBytes..(nonceSizeInBytes + tagSizeInBytes)];
+    var ciphertextBytes = payload[(nonceSizeInBytes + tagSizeInBytes)..];
+
+    var plainTextBytes = new byte[ciphertextBytes.Length];
+
+    using var aesGcm = new AesGcm(key, tagSizeInBytes);
+    aesGcm.Decrypt(nonce, ciphertextBytes, tag, plainTextBytes);
+
+    return Encoding.UTF8.GetString(plainTextBytes);
 }
 
 static string BuildShutdownEmailBody(string reason, Exception? exception)
