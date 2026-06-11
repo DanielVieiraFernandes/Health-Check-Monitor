@@ -223,13 +223,6 @@ public class Worker : BackgroundService
 
                 return;
             }
-
-            _workerConfig = result.Success!;
-            _logger.LogInformation("▶ Config atualizada | Intervalo={Intervalo}s Source=Banco", _workerConfig.MonitoringIntervalSeconds);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "▶ Config | Status=FalhaAtualizacao Source=Banco");
         }
         finally
         {
